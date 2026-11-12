@@ -111,7 +111,11 @@ Controllers call `PublishingService` (`services/publishingService.ts`).
 
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/cloudinary-config` | `publishingRoutes.ts`, `publishingController.getCloudinaryConfig` | Returns `{ cloudName, uploadPreset }` for frontend Cloudinary upload; 503 when the Worker has no Cloudinary settings |
+| GET | `/api/media-storage-config` | `publishingRoutes.ts`, `mediaUploadController.getMediaUploadConfig` | Reports whether the R2 binding and public media URL are configured |
+| POST | `/api/media-uploads` | `publishingRoutes.ts`, `mediaUploadController.startMediaUpload` | Starts a user-scoped R2 multipart upload |
+| PUT | `/api/media-uploads/:uploadId/parts/:partNumber` | `publishingRoutes.ts`, `mediaUploadController.uploadMediaPart` | Streams one binary chunk to R2 and returns its part ETag |
+| POST | `/api/media-uploads/:uploadId/complete` | `publishingRoutes.ts`, `mediaUploadController.completeMediaUpload` | Completes the multipart object and returns its public URL |
+| DELETE | `/api/media-uploads/:uploadId` | `publishingRoutes.ts`, `mediaUploadController.abortMediaUpload` | Aborts an incomplete multipart upload |
 | GET | `/api/accounts/:id/ig-publishing-limit` | `publishingRoutes.ts`, `publishingController.getPublishingLimit` | Checks daily Instagram publishing quota remaining |
 | POST | `/api/accounts/:id/ig-publish` | `publishingRoutes.ts`, `publishingController.createContainer` | Creates Instagram media container via Graph API; returns `{ containerId }` |
 | GET | `/api/ig-container/:containerId/status` | `publishingRoutes.ts`, `publishingController.getContainerStatus` | Polls container status (`FINISHED`, `IN_PROGRESS`, `ERROR`, `EXPIRED`); needs `?accountId=` of an Instagram account with a token (400 or 404 otherwise) |

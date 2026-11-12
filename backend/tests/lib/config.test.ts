@@ -12,8 +12,6 @@ function config(env: Partial<Env>) {
 test('secrets lose a byte order mark and whitespace, and blank ones count as unset', () => {
     assert.equal(config({ YOUTUBE_API_KEY: `${BOM} KEY \n` }).youtubeApiKey, 'KEY');
     assert.equal(config({ YOUTUBE_API_KEY: `${BOM}  ` }).youtubeApiKey, undefined);
-    assert.deepEqual(config({ CLOUDINARY_CLOUD_NAME: 'cloud', CLOUDINARY_UPLOAD_PRESET: ' preset ' }).cloudinary, { cloudName: 'cloud', uploadPreset: 'preset' });
-    assert.equal(config({ CLOUDINARY_CLOUD_NAME: 'cloud' }).cloudinary, null);
 });
 
 test('CORS allows FRONTEND_URL and ALLOWED_ORIGINS by origin', () => {

@@ -6,7 +6,7 @@ import SurfaceBox from '@/components/SurfaceBox';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/StateViews';
 import { useAppContext } from '../../../context/AppContext';
-import { useCloudinaryConfig } from '../../../hooks/use-cloudinary-config';
+import { useMediaStorageConfig } from '../../../hooks/use-media-storage-config';
 import AddTrackedDialog from './AddTrackedDialog';
 import BulkCategoryBar from './BulkCategoryBar';
 import EditTrackedDialog from './EditTrackedDialog';
@@ -32,7 +32,7 @@ export default function TrackedContent() {
   const redditAccounts = accounts.filter(account => account.platform === 'reddit');
   const tracked = useTrackedItems(showToast);
   const { setItems, replaceItem } = tracked;
-  const cloudConfig = useCloudinaryConfig();
+  const cloudConfig = useMediaStorageConfig();
   const filters = useTrackedFilters(tracked.items);
   const selection = useTrackedSelection(filters.filtered);
   const bulk = useBulkCategory({ selection, setItems, showToast });

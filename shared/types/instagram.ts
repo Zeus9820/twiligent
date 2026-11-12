@@ -207,10 +207,9 @@ export interface InstagramPublishingLimitResponse {
     data: InstagramPublishingLimit[];
 }
 
-export interface CloudinaryConfigResponse {
+export interface MediaStorageConfigResponse {
     success: true;
-    cloudName: string;
-    uploadPreset: string;
+    configured: boolean;
 }
 
 // GET /api/accounts/:id/ig-analytics; the account is sent without its access token

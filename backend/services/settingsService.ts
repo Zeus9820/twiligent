@@ -32,7 +32,6 @@ export function createSettingsService({ settings, config }: SettingsDeps): Setti
             return {
                 youtube: { configured: !!config.youtubeApiKey },
                 instagram: { configured: !!(config.instagram.appId && config.instagram.appSecret) },
-                cloudinary: { configured: config.cloudinary !== null },
             };
         },
     };

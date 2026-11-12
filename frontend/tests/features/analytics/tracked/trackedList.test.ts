@@ -71,7 +71,7 @@ test('manual views accept whole numbers and clear on empty', () => {
 
 test('image checks run in the original order', () => {
   const image = { type: 'image/png', size: 100 };
-  assert.equal(imageFileError(image, false), 'Image uploads need Cloudinary set up on the server. Check Settings.');
+  assert.equal(imageFileError(image, false), 'Image uploads need the R2 media bucket. Check the storage setup.');
   assert.equal(imageFileError({ type: 'text/plain', size: 1 }, true), 'That file is not an image. Choose a PNG, JPG or WebP file.');
   assert.equal(imageFileError({ type: 'image/png', size: MAX_IMAGE_BYTES + 1 }, true), 'That image is too large. Choose one under 10MB.');
   assert.equal(imageFileError(image, true), '');

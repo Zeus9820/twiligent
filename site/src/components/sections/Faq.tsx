@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 const QUESTIONS: { q: string; a: ReactNode }[] = [
   {
     q: 'What does running an instance cost?',
-    a: 'For a small team, nothing. Supabase, Cloudflare, Cloudinary and Upstash free plans cover typical use, and the YouTube and Instagram APIs are free.',
+    a: 'The core services have free plans for small teams. Cloudflare R2 media storage is billed by usage, and the YouTube and Instagram APIs are free.',
   },
   {
     q: 'How fresh is the data?',

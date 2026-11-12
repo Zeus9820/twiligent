@@ -1,7 +1,7 @@
 import { api } from '../../services/api';
 import { buildContainerPayload, buildScheduledPostPayload, singleUploadMessage } from './publishHelpers.ts';
 import { waitUntilReady } from './containerPolling.ts';
-import type { CloudinaryUploadConfig, UploadError } from '../../services/api';
+import type { MediaStorageConfig, UploadError } from '../../services/api';
 import type { AccountPostDetails, ContentTypeValue, SinglePostFields } from './publishHelpers.ts';
 import type { PublishStatus } from './queueHelpers.ts';
 
@@ -26,18 +26,18 @@ interface UploadedMedia {
 }
 
 export async function uploadSingleMedia(
-  file: File, cloudConfig: CloudinaryUploadConfig | null, onProgress: (percent: number) => void,
+  file: File, cloudConfig: MediaStorageConfig | null, onProgress: (percent: number) => void,
 ): Promise<string> {
-  if (!cloudConfig) throw new Error('Cloudinary is not set up on the server. Check Settings.');
+  if (!cloudConfig) throw new Error('Media uploads are unavailable. Check the R2 storage setup.');
   try {
-    return await api.uploadToCloudinary(file, cloudConfig, { onProgress });
+    return await api.uploadMedia(file, cloudConfig, { onProgress });
   } catch (err) {
     throw new Error(singleUploadMessage(err as UploadError));
   }
 }
 
 async function uploadPostMedia(
-  form: SinglePostInput, cloudConfig: CloudinaryUploadConfig | null, progress: PublishProgressSetters,
+  form: SinglePostInput, cloudConfig: MediaStorageConfig | null, progress: PublishProgressSetters,
 ): Promise<UploadedMedia> {
   const mediaUrl = await uploadSingleMedia(form.file as File, cloudConfig, progress.setUploadProgress);
   if (!form.coverFile || form.contentType !== 'REELS') return { mediaUrl, coverUrl: null };
@@ -51,7 +51,7 @@ function postDetails(form: SinglePostInput, uploaded: UploadedMedia): AccountPos
 }
 
 export async function scheduleSinglePost(
-  form: SinglePostInput, cloudConfig: CloudinaryUploadConfig | null, scheduledAt: Date, progress: PublishProgressSetters,
+  form: SinglePostInput, cloudConfig: MediaStorageConfig | null, scheduledAt: Date, progress: PublishProgressSetters,
 ): Promise<void> {
   const uploaded = await uploadPostMedia(form, cloudConfig, progress);
   progress.setPublishStatus('scheduling');
@@ -60,7 +60,7 @@ export async function scheduleSinglePost(
 }
 
 export async function publishSinglePost(
-  form: SinglePostInput, cloudConfig: CloudinaryUploadConfig | null, progress: PublishProgressSetters,
+  form: SinglePostInput, cloudConfig: MediaStorageConfig | null, progress: PublishProgressSetters,
 ): Promise<string> {
   const uploaded = await uploadPostMedia(form, cloudConfig, progress);
   progress.setPublishStatus('creating-container');

@@ -14,7 +14,7 @@ export default function PublishProgress({ progress, ...resultProps }: PublishRes
   return (
     <SurfaceBox>
       <div role="status" className="flex flex-col items-center gap-3 py-10 text-center">
-        {publishStatus === 'uploading-cloudinary' && (
+        {publishStatus === 'uploading-media' && (
           <>
             <Upload className="size-10 stroke-[1.5] text-ink-muted" />
             <h2 className="font-heading text-section font-semibold text-ink">Uploading media</h2>

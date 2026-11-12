@@ -22,8 +22,8 @@ export default function PlatformRequirementsSection() {
           <InstagramTesterNotice className="mt-2" />
         </div>
         <div className="flex flex-col gap-1 px-5 py-4">
-          <p className="text-sm font-medium text-ink">Cloudinary</p>
-          <p className="text-sm text-ink-muted">Instagram needs every file at a public URL before publishing. Cloudinary hosts uploads for that; its cloud name and upload preset are set on the server.</p>
+          <p className="text-sm font-medium text-ink">Cloudflare R2</p>
+          <p className="text-sm text-ink-muted">Instagram needs every file at a public URL before publishing. Media uploads to R2 in retryable multipart chunks, then Instagram fetches it from the bucket's public custom domain.</p>
         </div>
       </SurfaceBox>
     </SettingsSection>

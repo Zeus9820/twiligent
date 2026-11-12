@@ -24,7 +24,7 @@ export interface BulkStats {
 
 // an empty status is the form before a run
 export type PublishStatus =
-  | '' | 'uploading-cloudinary' | 'creating-container' | 'processing' | 'publishing' | 'scheduling' | 'scheduled' | 'done' | 'error';
+  | '' | 'uploading-media' | 'creating-container' | 'processing' | 'publishing' | 'scheduling' | 'scheduled' | 'done' | 'error';
 
 const DAY_MINUTES = 1440;
 

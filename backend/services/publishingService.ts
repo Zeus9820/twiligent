@@ -4,7 +4,7 @@ import {
 import { NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
 import type { ContainerStatus } from './instagram/instagramPublishing.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
-import type { AppConfig, CloudinaryConfig } from '../lib/config.ts';
+import type { AppConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { Account } from '../../shared/types/domain.ts';
 import type { InstagramPublishingLimit, InstagramPublishRequest } from '../../shared/types/instagram.ts';

@@ -8,7 +8,7 @@ A member signs in to an existing instance with Google, a code emailed to their a
 
 ### Administrator
 
-The administrator runs the instance. They create the Supabase project, get the platform keys (YouTube, Instagram, Cloudinary), deploy the backend and frontend to Cloudflare, and keep them running. The administrator is also the person members contact for Instagram tester access or when something is not working.
+The administrator runs the instance. They create the Supabase project, get the platform keys (YouTube and Instagram), deploy the backend and frontend to Cloudflare, and keep them running. The administrator is also the person members contact for Instagram tester access or when something is not working.
 
 ## Who does what
 
@@ -24,7 +24,7 @@ The administrator runs the instance. They create the Supabase project, get the p
 
 ## What is shared and what is yours
 
-- **Shared by everyone on the instance:** the YouTube API key, the Instagram (Meta) app, the Cloudinary account and the server itself. These are set once by the administrator.
+- **Shared by everyone on the instance:** the YouTube API key, the Instagram (Meta) app, Cloudflare R2 and the server itself. These are set once by the administrator.
 - **Yours alone:** the accounts you connect, their access tokens and cookies, your scheduled posts and your tracked content. Other members cannot see them, and the server never sends tokens or cookies back to any browser.
 
 <Callout type="tip" title="Running Twiligent just for yourself?">

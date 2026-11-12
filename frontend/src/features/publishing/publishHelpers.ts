@@ -56,7 +56,7 @@ export interface ScheduledPostDetails extends AccountPostDetails {
 export interface UploadFailure {
   message: string;
   reason?: 'network' | 'rejected';
-  cloudinaryMessage?: string;
+  storageMessage?: string;
 }
 
 export interface SinglePostCheck {
@@ -71,6 +71,7 @@ export interface SinglePostCheck {
 export interface BulkStartCheck {
   settings: BulkSettings;
   fileCount: number;
+  files?: readonly Pick<File, 'size'>[];
   hasCloudConfig: boolean;
   now: Date;
 }
@@ -83,6 +84,7 @@ export interface EditPostCheck {
 }
 
 const MINUTE_MS = 60000;
+const MAX_REEL_FILE_BYTES = 1_000_000_000;
 
 export function parseUserTags(text: string): UserTag[] {
   return text.split(',').map(entry => {
@@ -149,14 +151,15 @@ export function bulkPostDetails(settings: BulkSettings, item: Pick<QueueItem, 'c
 }
 
 export function singleUploadMessage(err: UploadFailure): string {
-  if (err.reason === 'network') return 'The upload lost its network connection. Check your connection and try again.';
-  if (err.reason === 'rejected') return err.cloudinaryMessage || 'Upload failed';
+  if (err.reason === 'network') return err.message;
+  if (err.reason === 'rejected') return err.storageMessage || 'Upload failed';
   return err.message;
 }
 
 export function singlePostError({ selectedAccount, file, contentType, hasCloudConfig, fields, now }: SinglePostCheck): string {
   if (!selectedAccount || !file || !contentType) return 'Choose an account, a content type and a file before publishing.';
-  if (!hasCloudConfig) return 'Cloudinary is not set up on the server. Check Settings.';
+  if (contentType === 'REELS' && file.size > MAX_REEL_FILE_BYTES) return 'Reels must be 1 GB or smaller to publish through Instagram.';
+  if (!hasCloudConfig) return 'Media uploads are unavailable. Check the R2 storage setup.';
   if (!fields.scheduleMode) return '';
   if (!fields.scheduleDate || !fields.scheduleTime) return 'Set a date and time for the scheduled post.';
   if (new Date(`${fields.scheduleDate}T${fields.scheduleTime}`) <= now) return 'Pick a time in the future.';
@@ -167,9 +170,10 @@ export function bulkBaseTime(settings: Pick<BulkSettings, 'scheduleMode' | 'star
   return settings.scheduleMode ? new Date(`${settings.startDate}T${settings.startTime}`) : null;
 }
 
-export function bulkStartError({ settings, fileCount, hasCloudConfig, now }: BulkStartCheck): string {
+export function bulkStartError({ settings, fileCount, files, hasCloudConfig, now }: BulkStartCheck): string {
   if (!settings.account || fileCount === 0 || !settings.contentType) return 'Choose an account, a content type and at least one file.';
-  if (!hasCloudConfig) return 'Cloudinary is not set up on the server. Check Settings.';
+  if (settings.contentType === 'REELS' && files?.some(file => file.size > MAX_REEL_FILE_BYTES)) return 'Each Reel must be 1 GB or smaller to publish through Instagram.';
+  if (!hasCloudConfig) return 'Media uploads are unavailable. Check the R2 storage setup.';
   if (settings.scheduleMode && (!settings.startDate || !settings.startTime)) return 'Set a start date and time for the schedule.';
   const baseTime = bulkBaseTime(settings);
   if (baseTime && baseTime <= now) return 'Pick a start time in the future.';

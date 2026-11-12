@@ -45,8 +45,8 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `YOUTUBE_API_KEY` | Yes | Shared YouTube Data API v3 key (all users share quota) |
 | `INSTAGRAM_APP_ID` | Yes | Meta/Facebook App ID for OAuth |
 | `INSTAGRAM_APP_SECRET` | Yes | Used for OAuth token exchange + HMAC state signing |
-| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name |
-| `CLOUDINARY_UPLOAD_PRESET` | Yes | Unsigned upload preset for direct browser uploads |
+| `MEDIA_BUCKET` | Yes | R2 bucket binding configured in `backend/wrangler.toml` |
+| `MEDIA_PUBLIC_URL` | Yes | Public custom-domain base URL for Instagram to fetch uploaded objects |
 | `BACKEND_URL` | Yes | This Worker's public URL (for OAuth callback construction) |
 | `FRONTEND_URL` | Yes | Frontend URL: the browser origin CORS allows, and the post-OAuth redirect back to the SPA |
 | `ALLOWED_ORIGINS` | Optional | Comma-separated extra browser origins CORS allows besides `FRONTEND_URL`, such as a second domain (`https://a.example.com,https://b.example.com`). Set it with `wrangler secret put` like the others, so the next `wrangler deploy` keeps it (a plain variable added in the dashboard can be replaced on deploy) |
@@ -88,8 +88,7 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 YOUTUBE_API_KEY=AIzaSy...
 INSTAGRAM_APP_ID=123456789
 INSTAGRAM_APP_SECRET=abc123...
-CLOUDINARY_CLOUD_NAME=mycloud
-CLOUDINARY_UPLOAD_PRESET=ml_default
+MEDIA_PUBLIC_URL=https://media.example.com
 BACKEND_URL=http://localhost:8787
 FRONTEND_URL=http://localhost:5173
 # ALLOWED_ORIGINS=https://another-domain.example.com
@@ -116,7 +115,7 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 1. **No Node.js APIs.** No `fs`, `Buffer`, `path`, `process.env` (use `c.env`), `require()`. Everything must be ESM `import`. `backend/tsconfig.json` does not load the Node types, so `npm run typecheck` flags these in Worker source.
 
-2. **No binary file handling.** The Worker cannot efficiently stream large binary files. Never add routes that accept file uploads - Cloudinary handles that directly from the browser.
+2. **Bounded binary parts only.** Publishing media uploads use 8 MiB chunks, streamed through authenticated Worker routes into an R2 multipart upload. Do not route a whole large file through one request or buffer a whole upload in memory.
 
 3. **No persistent state between requests.** The Worker isolate may be a fresh instance on every request. Do not rely on module-level variables to persist state across requests. All state must come from Supabase, Redis, or Worker KV. (The cache cooldown and the rate limiter's memory fallback keep per-isolate state on purpose, as a best-effort optimization that is safe to lose.)
 

@@ -73,9 +73,9 @@ test('bulk payloads match the shapes the bulk upload has always sent', () => {
 });
 
 test('single post upload errors keep their own wording', () => {
-  assert.equal(singleUploadMessage({ reason: 'network', message: 'x' }), 'The upload lost its network connection. Check your connection and try again.');
-  assert.equal(singleUploadMessage({ reason: 'rejected', cloudinaryMessage: 'Bad preset', message: 'Upload failed' }), 'Bad preset');
-  assert.equal(singleUploadMessage({ reason: 'rejected', parseMessage: 'Unexpected token', message: 'Upload failed' } as UploadFailure), 'Upload failed');
+  assert.equal(singleUploadMessage({ reason: 'network', message: 'The upload was interrupted. Your progress is saved so you can retry.' }), 'The upload was interrupted. Your progress is saved so you can retry.');
+  assert.equal(singleUploadMessage({ reason: 'rejected', storageMessage: 'R2 unavailable', message: 'Upload failed' }), 'R2 unavailable');
+  assert.equal(singleUploadMessage({ reason: 'rejected', message: 'Upload failed' } as UploadFailure), 'Upload failed');
   assert.equal(singleUploadMessage(new Error('Other')), 'Other');
 });
 
@@ -84,7 +84,7 @@ test('single post checks run in order', () => {
   const base = { selectedAccount: 'a', file: {} as File, contentType: 'IMAGE', hasCloudConfig: true, now };
   const fields = { scheduleMode: true, scheduleDate: '2030-05-02', scheduleTime: '09:00' };
   assert.equal(singlePostError({ ...base, file: null, fields }), 'Choose an account, a content type and a file before publishing.');
-  assert.equal(singlePostError({ ...base, hasCloudConfig: false, fields }), 'Cloudinary is not set up on the server. Check Settings.');
+  assert.equal(singlePostError({ ...base, hasCloudConfig: false, fields }), 'Media uploads are unavailable. Check the R2 storage setup.');
   assert.equal(singlePostError({ ...base, fields: { ...fields, scheduleTime: '' } }), 'Set a date and time for the scheduled post.');
   assert.equal(singlePostError({ ...base, fields: { ...fields, scheduleDate: '2030-04-30' } }), 'Pick a time in the future.');
   assert.equal(singlePostError({ ...base, fields }), '');
@@ -95,7 +95,7 @@ test('bulk start checks run in order', () => {
   const now = new Date('2030-04-30T00:00:00');
   const base = { settings: bulkSettings, fileCount: 2, hasCloudConfig: true, now };
   assert.equal(bulkStartError({ ...base, fileCount: 0 }), 'Choose an account, a content type and at least one file.');
-  assert.equal(bulkStartError({ ...base, hasCloudConfig: false }), 'Cloudinary is not set up on the server. Check Settings.');
+  assert.equal(bulkStartError({ ...base, hasCloudConfig: false }), 'Media uploads are unavailable. Check the R2 storage setup.');
   assert.equal(bulkStartError({ ...base, settings: { ...bulkSettings, startTime: '' } }), 'Set a start date and time for the schedule.');
   assert.equal(bulkStartError({ ...base, now: new Date('2031-01-01T00:00:00') }), 'Pick a start time in the future.');
   assert.equal(bulkStartError(base), '');

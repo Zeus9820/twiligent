@@ -278,7 +278,6 @@ export interface KeyStatus {
 export interface KeysStatusResponse {
     youtube: KeyStatus;
     instagram: KeyStatus;
-    cloudinary: KeyStatus;
 }
 
 export type ApiErrorCode =

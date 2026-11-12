@@ -1,12 +1,17 @@
 import { Hono } from 'hono';
 import {
-    getCloudinaryConfig, getPublishingLimit, createContainer, getContainerStatus, publishContainer,
+    getPublishingLimit, createContainer, getContainerStatus, publishContainer,
 } from '../controllers/publishingController.ts';
+import { abortMediaUpload, completeMediaUpload, getMediaUploadConfig, startMediaUpload, uploadMediaPart } from '../controllers/mediaUploadController.ts';
 import type { AppEnv } from '../types/app.ts';
 
 const router = new Hono<AppEnv>();
 
-router.get('/cloudinary-config', ...getCloudinaryConfig);
+router.get('/media-storage-config', ...getMediaUploadConfig);
+router.post('/media-uploads', ...startMediaUpload);
+router.put('/media-uploads/:uploadId/parts/:partNumber', ...uploadMediaPart);
+router.post('/media-uploads/:uploadId/complete', ...completeMediaUpload);
+router.delete('/media-uploads/:uploadId', ...abortMediaUpload);
 router.get('/accounts/:id/ig-publishing-limit', ...getPublishingLimit);
 router.post('/accounts/:id/ig-publish', ...createContainer);
 router.get('/ig-container/:containerId/status', ...getContainerStatus);

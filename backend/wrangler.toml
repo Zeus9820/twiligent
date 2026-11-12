@@ -2,5 +2,9 @@ name = "twiligent"
 main = "server.ts"
 compatibility_date = "2025-01-01"
 
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "twiligent-media"
+
 [triggers]
 crons = ["* * * * *", "*/5 * * * *", "0 0 * * *"]

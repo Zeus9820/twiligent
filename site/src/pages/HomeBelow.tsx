@@ -93,7 +93,7 @@ export default function HomeBelow() {
         <div className="grid gap-5 md:grid-cols-[5fr_8fr]">
           <BentoCard
             title="Mostly free plans"
-            text="Supabase, Cloudflare, Cloudinary and Upstash free plans are enough to start."
+            text="The core services have free plans. R2 media storage is billed by usage."
             placement="bottom-left"
           >
             <FreePlansMock />

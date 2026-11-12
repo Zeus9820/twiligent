@@ -6,12 +6,14 @@
 User selects account + uploads media + fills caption
         │
         ▼
-1. Frontend: Upload media to Cloudinary
-   api.getCloudinaryConfig() -> GET /api/cloudinary-config
-   -> returns { cloudName, uploadPreset }, or 503 when the Worker has no Cloudinary settings
-   
-   Browser uploads directly to Cloudinary using unsigned preset (api.uploadToCloudinary)
-   -> Cloudinary returns public URL (e.g., https://res.cloudinary.com/cloud/image/upload/...)
+1. Frontend: Upload media to Cloudflare R2
+   api.getMediaStorageConfig() -> GET /api/media-storage-config
+   -> returns { configured } based on the R2 binding and MEDIA_PUBLIC_URL
+
+   Browser creates a multipart upload with POST /api/media-uploads, then sends 8 MiB parts
+   to PUT /api/media-uploads/:uploadId/parts/:partNumber. Completed part ETags are persisted
+   in localStorage; failed parts retry independently. POST /complete commits the object.
+   -> Worker streams each chunk into its bound R2 bucket and returns its public custom-domain URL
         │
         ▼
 2. Frontend: Create media container

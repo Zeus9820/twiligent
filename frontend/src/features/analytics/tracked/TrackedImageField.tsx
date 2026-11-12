@@ -36,7 +36,7 @@ export default function TrackedImageField({ editor }: TrackedImageFieldProps) {
   const { imageUrl, uploading, imageInputRef, cloudConfig, editItem } = editor;
   const hint = cloudConfig
     ? 'Reddit posts have no thumbnail in the public API. Upload a screenshot to recognise the post at a glance.'
-    : 'Image uploads need Cloudinary set up on the server. Check Settings.';
+    : 'Image uploads need the R2 media bucket. Check the storage setup.';
   return (
     <FieldRow label="Image" hint={hint}>
       <input ref={imageInputRef} type="file" accept="image/*" onChange={editor.handleImageSelect} className="hidden" aria-label="Choose an image" />

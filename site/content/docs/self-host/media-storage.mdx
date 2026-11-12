@@ -1,0 +1,21 @@
+export const meta = { title: 'Media storage', description: 'Configure Cloudflare R2 for reliable Instagram media uploads.' }
+
+Instagram needs each file at a public URL while it processes a post. Twiligent stores publishing media in Cloudflare R2 and uploads it in 8 MB multipart chunks through the Worker. Failed parts retry independently, and completed parts are saved in the browser so an interrupted upload can resume.
+
+## Create and expose the bucket
+
+1. In the same Cloudflare account as the Worker, create an R2 bucket named `twiligent-media`.
+2. Attach a custom domain to the bucket and make objects publicly readable. Instagram must be able to fetch the media without signing in.
+3. In `backend/wrangler.toml`, the `MEDIA_BUCKET` binding points to this bucket. Keep the binding name and bucket name aligned if you change either.
+4. From the `backend/` directory, set the bucket's public base URL and deploy:
+
+```bash
+npx wrangler secret put MEDIA_PUBLIC_URL
+npm run deploy
+```
+
+Enter the custom domain root, such as `https://media.example.com`, with no trailing slash. Do not use a private or authenticated URL; Instagram fetches the object directly.
+
+The Worker creates user-scoped object keys, accepts only authenticated uploads, and completes the multipart upload before returning the public URL. Configure an R2 lifecycle rule to abort incomplete multipart uploads after a few days so abandoned uploads do not accumulate.
+
+R2 multipart objects support files far larger than Instagram's current 1 GB Reels publishing limit. Twiligent currently sends 8 MB parts, which can retry individually after an interruption.

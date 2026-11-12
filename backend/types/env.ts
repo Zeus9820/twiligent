@@ -6,8 +6,8 @@ export interface Env {
     YOUTUBE_API_KEY?: string;
     INSTAGRAM_APP_ID?: string;
     INSTAGRAM_APP_SECRET?: string;
-    CLOUDINARY_CLOUD_NAME?: string;
-    CLOUDINARY_UPLOAD_PRESET?: string;
+    MEDIA_BUCKET?: R2Bucket;
+    MEDIA_PUBLIC_URL?: string;
     BACKEND_URL?: string;
     FRONTEND_URL?: string;
     // comma-separated extra browser origins allowed by CORS, besides FRONTEND_URL

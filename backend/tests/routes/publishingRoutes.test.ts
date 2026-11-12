@@ -54,10 +54,12 @@ describe('publishing routes check the account before calling Instagram', () => {
         });
     });
 
-    test('a missing Cloudinary configuration is an error status, not a 200', async () => {
-        assert.deepEqual(await call('GET', '/cloudinary-config'), failure(503, 'NOT_CONFIGURED', 'Cloudinary not configured on server'));
-        assert.deepEqual(await call('GET', '/cloudinary-config', undefined, { CLOUDINARY_CLOUD_NAME: 'cloud', CLOUDINARY_UPLOAD_PRESET: 'preset' }), {
-            status: 200, body: { success: true, cloudName: 'cloud', uploadPreset: 'preset' },
+    test('media storage configuration reflects the R2 binding and public domain', async () => {
+        assert.deepEqual(await call('GET', '/media-storage-config'), {
+            status: 200, body: { success: true, configured: false },
+        });
+        assert.deepEqual(await call('GET', '/media-storage-config', undefined, { MEDIA_BUCKET: {} as R2Bucket, MEDIA_PUBLIC_URL: 'https://media.example.com' }), {
+            status: 200, body: { success: true, configured: true },
         });
     });
 });

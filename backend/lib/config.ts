@@ -17,11 +17,6 @@ const PUBLIC_ACCOUNT_HOURLY_MAX = 200;
 const DEFAULT_AUTOMATION_BATCH_SIZE = 10;
 const MAX_AUTOMATION_BATCH_SIZE = 15;
 
-export interface CloudinaryConfig {
-    cloudName: string;
-    uploadPreset: string;
-}
-
 // appId and appSecret are undefined when the Worker secrets are not set
 export interface InstagramOAuthConfig {
     frontendUrl: string;
@@ -53,7 +48,6 @@ export interface AutomationConfig {
 export interface AppConfig {
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
-    cloudinary: CloudinaryConfig | null;
     allowedOrigins: string[];
     authEmail: AuthEmailConfig;
     automation: AutomationConfig;
@@ -163,12 +157,9 @@ export function readAutomationConfig(env: Env): AutomationConfig {
 }
 
 export function readConfig(env: Env): AppConfig {
-    const cloudName = cleanSecret(env.CLOUDINARY_CLOUD_NAME);
-    const uploadPreset = cleanSecret(env.CLOUDINARY_UPLOAD_PRESET);
     return {
         youtubeApiKey: cleanSecret(env.YOUTUBE_API_KEY),
         instagram: readInstagramOAuthConfig(env),
-        cloudinary: cloudName && uploadPreset ? { cloudName, uploadPreset } : null,
         allowedOrigins: allowedOrigins(env),
         authEmail: readAuthEmailConfig(env),
         automation: readAutomationConfig(env),

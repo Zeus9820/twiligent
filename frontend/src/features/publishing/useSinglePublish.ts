@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { usePublishProgress } from './usePublishProgress';
 import { publishSinglePost, scheduleSinglePost } from './singlePostFlow.ts';
 import { singlePostError } from './publishHelpers.ts';
-import type { CloudinaryUploadConfig } from '../../services/api';
+import type { MediaStorageConfig } from '../../services/api';
 import type { AppContextValue } from '../../context/AppContext';
 import type { PublishProgressState } from './usePublishProgress';
 import type { SinglePostForm } from './useSinglePostForm';
 
 export interface SinglePublishOptions {
   form: SinglePostForm;
-  cloudConfig: CloudinaryUploadConfig | null;
+  cloudConfig: MediaStorageConfig | null;
   showToast: AppContextValue['showToast'];
   onScheduled: () => void;
 }
@@ -21,7 +21,7 @@ interface SinglePublishRun extends SinglePublishOptions {
 
 function beginRun(run: SinglePublishRun): void {
   run.setUploading(true);
-  run.progress.setPublishStatus('uploading-cloudinary');
+  run.progress.setPublishStatus('uploading-media');
   run.progress.setActiveStep(2);
 }
 

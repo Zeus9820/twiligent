@@ -12,7 +12,7 @@ Deploying the backend is all that is required. The Worker's cron trigger runs ev
 
 | Step | Status | What happens |
 | --- | --- | --- |
-| 1 | <Badge>pending</Badge> | The file is on Cloudinary and the post is saved with its time. |
+| 1 | <Badge>pending</Badge> | The file is in Cloudflare R2 and the post is saved with its time. |
 | 2 | <Badge>publishing</Badge> | A scheduler claims the post for up to 20 minutes. Only one scheduler can hold it, so it is published once. |
 | 3 | <Badge>published</Badge> | Instagram accepted it. The Instagram media ID is saved, unless the post was found already published through its container. |
 | 3 | <Badge>pending</Badge> | A passing problem, such as a timeout or a temporary Instagram error. The reason is saved and the next run tries again, up to 3 attempts in all. |

@@ -4,7 +4,7 @@ import { api } from '../../../services/api';
 import { isRedditItem } from '../../../utils/trackedContent';
 import { imageFileError, parseManualViews } from './trackedList.ts';
 import type { TrackedContentItem, TrackedContentUpdateRequest } from '@shared/types/domain.ts';
-import type { CloudinaryConfigResponse } from '@shared/types/instagram.ts';
+import type { MediaStorageConfigResponse } from '@shared/types/instagram.ts';
 import type { ShowToast } from './useTrackedItems';
 
 export interface TrackedEditFields {
@@ -14,7 +14,7 @@ export interface TrackedEditFields {
 }
 
 interface UseTrackedImageOptions {
-  cloudConfig: CloudinaryConfigResponse | null;
+  cloudConfig: MediaStorageConfigResponse | null;
   showToast: ShowToast;
 }
 

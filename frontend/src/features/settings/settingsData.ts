@@ -39,7 +39,7 @@ export const DOC_LINKS: DocLink[] = [
 
 export const EXTERNAL_LINKS: ExternalLink[] = [
   { label: 'Supabase API keys', href: 'https://supabase.com/dashboard/project/_/settings/api-keys' },
-  { label: 'Cloudinary console', href: 'https://cloudinary.com/console' },
+  { label: 'Cloudflare R2 dashboard', href: 'https://dash.cloudflare.com/?to=/:account/r2/overview' },
   { label: 'Google Cloud credentials', href: 'https://console.cloud.google.com/apis/credentials' },
   { label: 'Meta app dashboard', href: 'https://developers.facebook.com/apps' },
   { label: 'Cloudflare dashboard', href: 'https://dash.cloudflare.com' },

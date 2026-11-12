@@ -17,7 +17,7 @@ interface Service {
 const SERVICES: Service[] = [
   { name: 'Supabase', use: 'Database and sign-in', icon: Database, used: 18 },
   { name: 'Cloudflare', use: 'The Worker and the website', icon: Cloud, used: 9 },
-  { name: 'Cloudinary', use: 'Photos and videos to publish', icon: Gallery, used: 24 },
+  { name: 'Cloudflare R2', use: 'Multipart media uploads', icon: Gallery, used: 24 },
   { name: 'Upstash Redis', use: 'Cache, optional', icon: ServerSquare, used: 6 },
 ];
 
@@ -31,10 +31,10 @@ export function FreePlansMock() {
   return (
     <Frame
       ref={ref}
-      label="Supabase, Cloudflare, Cloudinary and Upstash Redis, each on its free plan, with most of each plan unused."
+      label="Supabase, Cloudflare and Upstash Redis, with Cloudflare R2 media storage billed by usage."
       icon={<Widget className="size-5" />}
       title="Services"
-      meta={<span className="font-mono text-[11px] text-ink-muted">4 free plans</span>}
+      meta={<span className="font-mono text-[11px] text-ink-muted">3 free plans + R2</span>}
     >
       <ul className="flex flex-col gap-2.5 p-4">
         {SERVICES.map((service, i) => {

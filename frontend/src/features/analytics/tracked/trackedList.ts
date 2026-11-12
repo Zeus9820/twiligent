@@ -107,7 +107,7 @@ export function parseManualViews(raw: string): ManualViewsResult {
 }
 
 export function imageFileError(file: Pick<File, 'type' | 'size'>, hasCloudConfig: boolean): string {
-  if (!hasCloudConfig) return 'Image uploads need Cloudinary set up on the server. Check Settings.';
+  if (!hasCloudConfig) return 'Image uploads need the R2 media bucket. Check the storage setup.';
   if (!file.type.startsWith('image/')) return 'That file is not an image. Choose a PNG, JPG or WebP file.';
   if (file.size > MAX_IMAGE_BYTES) return `That image is too large. Choose one under ${MAX_IMAGE_BYTES / 1024 / 1024}MB.`;
   return '';

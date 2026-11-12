@@ -3,7 +3,7 @@ import { waitUntilReady, wait } from './containerPolling.ts';
 import {
   buildContainerPayload, buildScheduledPostPayload, bulkBaseTime, bulkPostDetails, bulkScheduledTime, bulkStartError,
 } from './publishHelpers.ts';
-import type { CloudinaryUploadConfig } from '../../services/api';
+import type { MediaStorageConfig } from '../../services/api';
 import type { AppContextValue } from '../../context/AppContext';
 import type { BulkSettings } from './publishHelpers.ts';
 import type { QueueItem, QueueItemPatch } from './queueHelpers.ts';
@@ -12,7 +12,7 @@ import type { BulkQueue } from './useBulkQueue';
 export interface BulkPublishOptions {
   queue: BulkQueue;
   settings: BulkSettings;
-  cloudConfig: CloudinaryUploadConfig | null;
+  cloudConfig: MediaStorageConfig | null;
   showToast: AppContextValue['showToast'];
   onScheduled: () => void;
 }
@@ -20,7 +20,7 @@ export interface BulkPublishOptions {
 // cloudConfig is set and baseTime is set in schedule mode once bulkStartError passes
 interface BulkRun {
   settings: BulkSettings;
-  cloudConfig: CloudinaryUploadConfig | null;
+  cloudConfig: MediaStorageConfig | null;
   baseTime: Date | null;
   patchFile: (id: number, patch: QueueItemPatch) => void;
   isCancelled: () => boolean;
@@ -64,7 +64,7 @@ async function publishItem(run: BulkRun, item: QueueItem, mediaUrl: string): Pro
 async function processItem(run: BulkRun, item: QueueItem, offset: number): Promise<ItemOutcome> {
   run.patchFile(item.id, { status: 'uploading', progress: 0 });
   const onProgress = (progress: number) => run.patchFile(item.id, { progress });
-  const mediaUrl = await api.uploadToCloudinary(item.file, run.cloudConfig as CloudinaryUploadConfig, { onProgress });
+  const mediaUrl = await api.uploadMedia(item.file, run.cloudConfig as MediaStorageConfig, { onProgress });
   if (run.isCancelled()) return CANCELLED;
   if (!run.settings.scheduleMode) return publishItem(run, item, mediaUrl);
   await scheduleItem(run, item, mediaUrl, offset);
@@ -96,7 +96,7 @@ export function useBulkPublish({ queue, settings, cloudConfig, showToast, onSche
 
   // the queue and settings are read once, as they are at the moment of the click
   const handleBulkProcess = async () => {
-    const error = bulkStartError({ settings, fileCount: queue.files.length, hasCloudConfig: Boolean(cloudConfig), now: new Date() });
+    const error = bulkStartError({ settings, fileCount: queue.files.length, files: queue.files.map(item => item.file), hasCloudConfig: Boolean(cloudConfig), now: new Date() });
     if (error) {
       showToast(error, 'error');
       return;

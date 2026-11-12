@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/PageHeader';
 import { useAppContext } from '../../context/AppContext';
-import { useCloudinaryConfig } from '../../hooks/use-cloudinary-config';
+import { useMediaStorageConfig } from '../../hooks/use-media-storage-config';
 import BulkUploadTab from './BulkUploadTab';
 import NoInstagramAccount from './NoInstagramAccount';
 import ScheduledPostDialogs from './ScheduledPostDialogs';
@@ -27,7 +27,7 @@ type UploadMode = 'single' | 'bulk';
 
 export default function UploadContent() {
   const { accounts, showToast } = useAppContext();
-  const cloudConfig = useCloudinaryConfig(accounts);
+  const cloudConfig = useMediaStorageConfig(accounts);
   const [igAccounts, setIgAccounts] = useState<AppAccount[]>([]);
   const [uploadMode, setUploadMode] = useState<UploadMode>('single');
   const schedule = useScheduledPosts();
@@ -70,7 +70,7 @@ export default function UploadContent() {
         <Alert variant="warning">
           <AlertCircle />
           <AlertDescription>
-            Uploads need Cloudinary, which is not set up on the server. Instagram only accepts media from a public URL. Set the Cloudinary environment variables, then check the status in <Link to="/settings" className="font-semibold underline">Settings</Link>.
+            Publishing media storage is unavailable. Check the R2 bucket binding and public media domain, then try again.
           </AlertDescription>
         </Alert>
       )}

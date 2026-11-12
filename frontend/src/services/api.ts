@@ -8,7 +8,7 @@ import type {
     TrackedContentItem, TrackedContentUpdateRequest, YouTubeAccountAddResponse,
 } from '@shared/types/domain.ts';
 import type {
-    CloudinaryConfigResponse, InstagramAnalyticsResponse, InstagramAuthUrlResponse, InstagramContainerStatusResponse,
+    MediaStorageConfigResponse, InstagramAnalyticsResponse, InstagramAuthUrlResponse, InstagramContainerStatusResponse,
     InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
     InstagramPublishResponse, InstagramTokenRefreshResponse,
 } from '@shared/types/instagram.ts';
@@ -42,86 +42,134 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return data as T;
 }
 
-const CLOUDINARY_API = 'https://api.cloudinary.com/v1_1';
+const MEDIA_RETRY_DELAYS = [0, 1000, 3000, 7000, 15000];
 
 export type UploadErrorReason = 'network' | 'rejected';
 
 interface UploadErrorDetails {
-    cloudinaryMessage?: string;
-    parseMessage?: string;
+    storageMessage?: string;
 }
 
-// what uploadToCloudinary rejects with
+// what uploadMedia rejects with
 export type UploadError = Error & UploadErrorDetails & { reason: UploadErrorReason };
 
-export type CloudinaryUploadConfig = Pick<CloudinaryConfigResponse, 'cloudName' | 'uploadPreset'>;
+export type MediaStorageConfig = MediaStorageConfigResponse;
 
 export interface UploadOptions {
     onProgress?: (percent: number) => void;
 }
 
-// the parts of a Cloudinary upload response the client reads
-interface CloudinaryUploadBody {
-    secure_url?: string;
-    error?: { message?: string };
-}
-
 const UPLOAD_ERROR_MESSAGES: Record<UploadErrorReason, string> = {
-    network: 'The upload lost its network connection',
+    network: 'The upload was interrupted. Your progress is saved so you can retry.',
     rejected: 'Upload failed',
 };
 
 // callers read the reason and details so each page keeps its own wording
 function uploadError(reason: UploadErrorReason, details: UploadErrorDetails = {}): UploadError {
-    return Object.assign(new Error(UPLOAD_ERROR_MESSAGES[reason]), { reason, ...details });
+    const detail = reason === 'network' ? details.storageMessage : undefined;
+    return Object.assign(new Error(detail ? `${UPLOAD_ERROR_MESSAGES[reason]}. ${detail}` : UPLOAD_ERROR_MESSAGES[reason]), { reason, ...details });
 }
 
-function readUploadError(responseText: string): UploadErrorDetails {
-    try {
-        return { cloudinaryMessage: (JSON.parse(responseText) as CloudinaryUploadBody).error?.message };
-    } catch (err) {
-        return { parseMessage: (err as Error).message };
-    }
+interface MultipartPart {
+    partNumber: number;
+    etag: string;
 }
 
-// the browser posts straight to Cloudinary so the Worker never handles binaries
-function uploadToCloudinary(file: File, cloudConfig: CloudinaryUploadConfig, { onProgress }: UploadOptions = {}): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', cloudConfig.uploadPreset);
-    const type = file.type.startsWith('video/') ? 'video' : 'image';
-    const xhr = new XMLHttpRequest();
-    return new Promise<string>((resolve, reject) => {
-        if (onProgress) {
-            xhr.upload.addEventListener('progress', e => {
-                if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+interface MultipartState {
+    uploadId: string;
+    key: string;
+    partSize: number;
+    publicUrl: string;
+    parts: MultipartPart[];
+}
+
+interface XhrResult {
+    etag: string;
+}
+
+async function putMediaPart(uploadId: string, key: string, partNumber: number, chunk: Blob, onProgress: (loaded: number) => void): Promise<XhrResult> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Sign in again before uploading media.');
+    const url = `${API}/media-uploads/${encodeURIComponent(uploadId)}/parts/${partNumber}?key=${encodeURIComponent(key)}`;
+    let lastError: Error | undefined;
+    for (let attempt = 0; attempt < MEDIA_RETRY_DELAYS.length; attempt++) {
+        if (MEDIA_RETRY_DELAYS[attempt]) await new Promise(resolve => setTimeout(resolve, MEDIA_RETRY_DELAYS[attempt]));
+        try {
+            return await new Promise<XhrResult>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', url);
+                xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress(event.loaded); };
+                xhr.onerror = () => reject(new Error('Network error while sending a media part.'));
+                xhr.onload = () => {
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        let message = `Storage returned HTTP ${xhr.status}.`;
+                        try { message = (JSON.parse(xhr.responseText) as { error?: string; message?: string }).message || message; } catch { /* keep status message */ }
+                        reject(new Error(message));
+                        return;
+                    }
+                    try { resolve(JSON.parse(xhr.responseText) as XhrResult); }
+                    catch { reject(new Error('Storage returned an invalid part response.')); }
+                };
+                xhr.send(chunk);
             });
+        } catch (error) {
+            lastError = error as Error;
         }
-        xhr.addEventListener('load', () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                resolve((JSON.parse(xhr.responseText) as CloudinaryUploadBody).secure_url as string);
-                return;
-            }
-            reject(uploadError('rejected', readUploadError(xhr.responseText)));
-        });
-        xhr.addEventListener('error', () => reject(uploadError('network')));
-        xhr.open('POST', `${CLOUDINARY_API}/${cloudConfig.cloudName}/${type}/upload`);
-        xhr.send(formData);
-    });
+    }
+    throw lastError || new Error('Media part upload failed.');
 }
 
-// screenshots need no progress events and show cloudinary's own error message
-async function uploadImage(file: File, cloudConfig: CloudinaryUploadConfig): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', cloudConfig.uploadPreset);
-
-    const res = await fetch(`${CLOUDINARY_API}/${cloudConfig.cloudName}/image/upload`, { method: 'POST', body: formData });
-    const json = await res.json() as CloudinaryUploadBody;
-    if (!res.ok || !json.secure_url) {
-        throw new Error(json.error?.message || 'Cloudinary did not return an image URL');
+async function uploadMedia(file: File, _config: MediaStorageConfig, { onProgress }: UploadOptions = {}): Promise<string> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Sign in again before uploading media.');
+    const stateKey = `twiligent-r2-upload:${session.user.id}:${file.name}:${file.size}:${file.lastModified}:${file.type}`;
+    let state: MultipartState | null = null;
+    try { state = JSON.parse(localStorage.getItem(stateKey) || 'null') as MultipartState | null; }
+    catch { localStorage.removeItem(stateKey); }
+    if (!state) {
+        const started = await request<{ success: true } & MultipartState>('/media-uploads', {
+            method: 'POST', body: JSON.stringify({ fileName: file.name, contentType: file.type || 'application/octet-stream' }),
+        });
+        state = { uploadId: started.uploadId, key: started.key, partSize: started.partSize, publicUrl: started.publicUrl, parts: [] };
+        localStorage.setItem(stateKey, JSON.stringify(state));
     }
-    return json.secure_url;
+    const parts = new Map(state.parts.map(part => [part.partNumber, part]));
+    let completedBytes = [...parts.keys()].reduce((sum, number) => sum + Math.min(state!.partSize, file.size - (number - 1) * state!.partSize), 0);
+    const totalParts = Math.ceil(file.size / state.partSize);
+    for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+        if (parts.has(partNumber)) continue;
+        const start = (partNumber - 1) * state.partSize;
+        const chunk = file.slice(start, Math.min(start + state.partSize, file.size));
+        try {
+            const part = await putMediaPart(state.uploadId, state.key, partNumber, chunk, loaded => {
+                onProgress?.(Math.round((completedBytes + loaded) / file.size * 100));
+            });
+            parts.set(partNumber, { partNumber, etag: part.etag });
+            state.parts = [...parts.values()].sort((a, b) => a.partNumber - b.partNumber);
+            localStorage.setItem(stateKey, JSON.stringify(state));
+            completedBytes += chunk.size;
+            onProgress?.(Math.round(completedBytes / file.size * 100));
+        } catch (error) {
+            throw uploadError('network', { storageMessage: (error as Error).message });
+        }
+    }
+    try {
+        await request(`/media-uploads/${encodeURIComponent(state.uploadId)}/complete`, {
+            method: 'POST', body: JSON.stringify({ key: state.key, parts: [...parts.values()] }),
+        });
+    } catch (error) {
+        throw uploadError('rejected', { storageMessage: (error as Error).message });
+    }
+    localStorage.removeItem(stateKey);
+    onProgress?.(100);
+    return state.publicUrl;
+}
+
+// tracked-content screenshots use the same multipart storage path
+async function uploadImage(file: File, config: MediaStorageConfig): Promise<string> {
+    return uploadMedia(file, config);
 }
 
 export const api = {
@@ -153,8 +201,8 @@ export const api = {
 
     getComparison: () => request<YouTubeComparisonResponse>('/comparison'),
 
-    getCloudinaryConfig: () => request<CloudinaryConfigResponse>('/cloudinary-config'),
-    uploadToCloudinary,
+    getMediaStorageConfig: () => request<MediaStorageConfigResponse>('/media-storage-config'),
+    uploadMedia,
     uploadImage,
 
     // Instagram Publishing

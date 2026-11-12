@@ -44,5 +44,5 @@ Choose **Bulk upload** to add many files at once. Give each file its own caption
 ## Limits
 
 - Instagram allows 100 posts per account in any 24 hours.
-- Photos up to 8MB; videos up to 300MB and 15 minutes; Stories up to 60 seconds.
-- Publishing needs Cloudinary set up by the administrator. If it is missing, Publish says so.
+- Photos up to 8MB; Reels up to 1GB and 15 minutes; Stories up to 60 seconds.
+- Media is uploaded to Cloudflare R2 in retryable multipart chunks. Meta's Reels Publishing API currently documents a 1GB maximum.

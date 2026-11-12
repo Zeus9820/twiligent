@@ -29,7 +29,7 @@ export const BULK_INTERVAL_OPTIONS = [
 
 export const CONTENT_TYPES: ContentTypeOption[] = [
   { value: 'IMAGE',   label: 'Photo', icon: ImageIcon, accept: 'image/jpeg', desc: 'JPEG, 4:5 to 1.91:1, up to 8MB' },
-  { value: 'REELS',   label: 'Reel',  icon: Film,      accept: 'video/mp4,video/quicktime', desc: 'MP4 or MOV, 9:16, 3 seconds to 15 minutes, up to 300MB' },
+  { value: 'REELS',   label: 'Reel',  icon: Film,      accept: 'video/mp4,video/quicktime', desc: 'MP4 or MOV, 9:16, 3 seconds to 15 minutes, up to 1GB' },
   { value: 'STORIES', label: 'Story', icon: BookOpen,  accept: 'image/jpeg,video/mp4,video/quicktime', desc: 'Image or video, 9:16, up to 60 seconds' },
 ];
 

@@ -180,7 +180,7 @@ export function ScheduleCard() {
                 </span>
                 <div>
                   <p className="text-[13px] font-medium text-ink">Choose a video</p>
-                  <p className="text-[11px] text-ink-muted">MP4 or MOV, up to 300MB</p>
+                  <p className="text-[11px] text-ink-muted">MP4 or MOV, up to 1GB</p>
                 </div>
               </motion.div>
             )}

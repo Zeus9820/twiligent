@@ -44,12 +44,11 @@ export default function ServerKeysSection({ serverStatus, refreshAll, refreshing
     <SettingsSection
       id="server-keys"
       title="Server API keys"
-      description="YouTube, Instagram and Cloudinary credentials are environment variables on the server, shared by everyone on this instance."
+      description="YouTube and Instagram credentials are environment variables on the server, shared by everyone on this instance."
     >
       <SurfaceBox content={false} className="divide-y divide-divider">
         <StatusRow label="YouTube" hint="Channel and video analytics" ok={serverStatus?.youtube?.configured} />
         <StatusRow label="Instagram" hint="Account connection and publishing" ok={serverStatus?.instagram?.configured} />
-        <StatusRow label="Cloudinary" hint="Media hosting for publishing" ok={serverStatus?.cloudinary?.configured} />
       </SurfaceBox>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" onClick={handleTest} disabled={testing}>

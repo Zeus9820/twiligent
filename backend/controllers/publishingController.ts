@@ -1,3 +1,4 @@
+import { ValidationError } from '../lib/errors.ts';
 import { controller, pathParam, servicesFor } from './http.ts';
 import { jsonBody, queryParams } from '../middleware/validate.ts';
 import { parseContainerInput, parseContainerStatusQuery, parsePublishRequest } from '../validators/publishingValidators.ts';
@@ -36,4 +37,16 @@ export const publishContainer = controller.createHandlers(jsonBody(parseContaine
         }
     }
     return c.json({ success: true, mediaId } satisfies InstagramMediaPublishResponse);
+});
+
+export const instagramMediaCapabilities = controller.createHandlers(async c => c.json(await servicesFor(c).publishing.mediaCapabilities(c.get('userId'), pathParam(c, 'id'))));
+export const manageInstagramComments = controller.createHandlers(async c => {
+    const body = await c.req.json() as { enabled?: unknown };
+    if (typeof body.enabled !== 'boolean') throw new ValidationError('Specify whether comments are enabled.');
+    await servicesFor(c).publishing.manageMedia(c.get('userId'), pathParam(c, 'id'), pathParam(c, 'mediaId'), 'comments', body.enabled);
+    return c.json({ success: true });
+});
+export const deleteInstagramMedia = controller.createHandlers(async c => {
+    await servicesFor(c).publishing.manageMedia(c.get('userId'), pathParam(c, 'id'), pathParam(c, 'mediaId'), 'delete');
+    return c.json({ success: true });
 });

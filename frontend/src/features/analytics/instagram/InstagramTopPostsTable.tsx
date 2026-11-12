@@ -15,7 +15,7 @@ export interface InstagramTopPostsTableProps {
 export default function InstagramTopPostsTable({ posts, title = 'Top performing posts' }: InstagramTopPostsTableProps) {
   return (
     <SurfaceBox title={title} content={false} className="overflow-hidden">
-      <p className="p-4 text-sm text-ink-muted">To edit a published caption, archive or delete a Reel, open the post in Instagram. Published media editing and deletion are unavailable through this integration.</p>
+      <p className="p-4 text-sm text-ink-muted">Use Manage published Instagram posts for comment controls and available deletion actions. Open a post in Instagram to edit its caption or archive it.</p>
       <Table>
         <TableHeader>
           <TableRow>

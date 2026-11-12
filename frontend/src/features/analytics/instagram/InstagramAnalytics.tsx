@@ -1,3 +1,4 @@
+import InstagramMediaManager from './InstagramMediaManager';
 import { useParams } from 'react-router-dom';
 import { UserX } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -53,6 +54,7 @@ export default function InstagramAnalytics() {
 
       {refreshing && <Progress value={null} aria-label="Refreshing account" />}
 
+      <InstagramMediaManager key={account.id} accountId={account.id} posts={analyticsData.recentMedia || []} />
       <InstagramMetrics profile={profileData} analytics={analyticsData} />
       <InstagramInsightChips analytics={analyticsData} />
       <InstagramEngagementCharts charts={charts} />

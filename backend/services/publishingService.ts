@@ -1,3 +1,4 @@
+import { igFetch, igPost, buildGraphUrl, readGraphResponse } from './instagram/instagramApi.ts';
 import {
     buildMediaParams, createMediaContainer, fetchContainerStatus, publishMediaContainer, fetchPublishingLimit,
 } from './instagram/instagramPublishing.ts';
@@ -19,6 +20,8 @@ export interface PublishingDeps {
 }
 
 export interface PublishingService {
+    mediaCapabilities(userId: string, accountId: string): Promise<{ canDelete: boolean; canManageComments: boolean }>;
+    manageMedia(userId: string, accountId: string, mediaId: string, action: 'delete' | 'comments', enabled?: boolean): Promise<void>;
     publishingLimit(userId: string, accountId: string): Promise<InstagramPublishingLimit[]>;
     createContainer(userId: string, accountId: string, post: InstagramPublishRequest): Promise<string>;
     containerStatus(userId: string, accountId: string, containerId: string): Promise<ContainerStatus>;
@@ -61,7 +64,33 @@ export function createPublishingService({ accounts, config, context, redis }: Pu
         return `windsor:publish:${userId}:${accountId}:${containerId}`;
     }
 
+    async function capabilities(account: PublishableAccount) {
+        if (!account.accessToken.startsWith('EA')) return { canDelete: false, canManageComments: true };
+        const permissions = await igFetch<{ data?: Array<{ permission: string; status: string }> }>('/me/permissions', { access_token: account.accessToken }, 0, signal);
+        const granted = new Set((permissions.data ?? []).filter(item => item.status === 'granted').map(item => item.permission));
+        return { canDelete: granted.has('instagram_manage_contents'), canManageComments: granted.has('instagram_manage_comments') };
+    }
     return {
+        async mediaCapabilities(userId, accountId) {
+            return capabilities(await findPublishable(userId, accountId));
+        },
+        async manageMedia(userId, accountId, mediaId, action, enabled) {
+            if (!/^\d{1,40}$/.test(mediaId)) throw new ValidationError('Invalid Instagram media ID.');
+            const account = await findPublishable(userId, accountId);
+            const media = await igFetch<{ owner?: { id: string } }>(`/${mediaId}`, { access_token: account.accessToken, fields: 'owner' }, 0, signal);
+            if (String(media.owner?.id) !== account.igUserId) throw new NotFoundError('Post not found on this Instagram account.');
+            const allowed = await capabilities(account);
+            if (action === 'comments') {
+                if (!allowed.canManageComments || typeof enabled !== 'boolean') throw new ValidationError('Reconnect with comment management permission.');
+                await igPost(`/${mediaId}`, { access_token: account.accessToken, comment_enabled: String(enabled) }, signal);
+                return;
+            }
+            if (!allowed.canDelete) throw new ValidationError('Deletion requires Facebook Login and instagram_manage_contents permission.');
+            const response = await fetch(buildGraphUrl(`/${mediaId}`, { access_token: account.accessToken }), { method: 'DELETE', signal });
+            const body = await response.json() as { success?: boolean; error?: { message?: string } };
+            readGraphResponse(body);
+            if (!response.ok || body.success !== true) throw new ValidationError('Instagram did not confirm deletion. Open the post in Instagram to manage it.');
+        },
         async publishingLimit(userId, accountId) {
             if (await windsorAccount(userId, accountId)) return [];
             const account = await findPublishable(userId, accountId);

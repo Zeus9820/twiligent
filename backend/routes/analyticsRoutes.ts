@@ -1,3 +1,4 @@
+import { instagramMediaCapabilities, manageInstagramComments, deleteInstagramMedia } from '../controllers/publishingController.ts';
 import { Hono } from 'hono';
 import {
     getChannelAnalytics, getChannelVideos, getComparison, getVideoLibrary, getInstagramAnalytics, getInstagramMedia,
@@ -6,6 +7,9 @@ import type { AppEnv } from '../types/app.ts';
 import { listManagedVideos, editManagedVideo, deleteManagedVideo, getYouTubeStudioUrl, getYouTubeStudioSummary, startYouTubeShortUpload } from '../controllers/youtubeStudioController.ts';
 
 const router = new Hono<AppEnv>();
+router.get('/accounts/:id/ig-management', ...instagramMediaCapabilities);
+router.put('/accounts/:id/ig-media/:mediaId/comments', ...manageInstagramComments);
+router.delete('/accounts/:id/ig-media/:mediaId', ...deleteInstagramMedia);
 router.get('/accounts/:id/youtube-studio/videos', ...listManagedVideos);
 router.put('/accounts/:id/youtube-studio/videos/:videoId', ...editManagedVideo);
 router.delete('/accounts/:id/youtube-studio/videos/:videoId', ...deleteManagedVideo);

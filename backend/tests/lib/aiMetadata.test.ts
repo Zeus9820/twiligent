@@ -11,5 +11,9 @@ test('handles reasoning, fences and text content blocks', () => {
     assert.equal(parseAiMetadata({ choices: [{ message: { content: [{ type: 'text', text: json }] } }] }).summary, 'A scene');
 });
 test('rejects truncation, empty and invalid metadata', () => {
-    for (const result of [null, { response: 'not json' }, { response: 'null' }, { response: '{"title":"","description":"x"}' }, { choices: [{ finish_reason: 'length', message: { content: json } }] }]) assert.throws(() => parseAiMetadata(result));
+    for (const result of [null, { response: 'not json' }, { response: 'null' }, { response: '{"title":"","description":"x"}' }, { choices: [{ finish_reason: 'length', message: { content: '{"title":' } }] }]) assert.throws(() => parseAiMetadata(result));
+});
+
+test('accepts complete validated metadata despite token-limit finish flag', () => {
+    assert.equal(parseAiMetadata({ choices: [{ finish_reason: 'length', message: { content: json } }] }).title, 'Gaming clip');
 });

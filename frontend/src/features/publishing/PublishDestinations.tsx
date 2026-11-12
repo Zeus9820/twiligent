@@ -1,3 +1,4 @@
+import AiMetadata from '@/components/AiMetadata';
 import { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,7 +52,7 @@ export default function PublishDestinations(props: PublishDestinationsProps) {
           <p className="mb-2">Reconnect this channel and approve YouTube upload access before publishing Shorts.</p>
           <button type="button" className="font-semibold text-brand-text underline" onClick={connectYouTube} disabled={connecting}>{connecting ? 'Connecting…' : 'Connect YouTube upload access'}</button>
         </div>}
-        {props.showYouTubeMetadata !== false && <><label className="flex flex-col gap-1 text-small font-medium text-ink">Short title
+        {props.showYouTubeMetadata !== false && <><AiMetadata context={[props.title, props.description].filter(Boolean).join('\n')} disabled={props.disabled} onApply={value => { props.onTitle(value.title); props.onDescription(value.description); }} /><label className="flex flex-col gap-1 text-small font-medium text-ink">Short title
           <input value={props.title} onChange={event => props.onTitle(event.target.value)} maxLength={100} disabled={props.disabled} className="h-10 rounded-control border border-line bg-surface px-3" placeholder="A clear title for your Short" />
         </label>
         <label className="flex flex-col gap-1 text-small font-medium text-ink">YouTube description

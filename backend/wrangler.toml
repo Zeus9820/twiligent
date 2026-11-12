@@ -8,3 +8,6 @@ bucket_name = "twiligent-media"
 
 [triggers]
 crons = ["* * * * *", "*/5 * * * *", "0 0 * * *"]
+
+[ai]
+binding = "AI"

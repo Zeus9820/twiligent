@@ -1,3 +1,4 @@
+import AiMetadata from '@/components/AiMetadata';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,7 @@ export default function PublishedVideoManager({ accountId }: { accountId: string
         <label htmlFor="manage-title">Title</label><Input id="manage-title" required maxLength={100} value={edit.title} disabled={busy} onChange={event => setEdit({ ...edit, title: event.target.value })} />
         <label htmlFor="manage-description">Description</label><Textarea id="manage-description" maxLength={5000} value={edit.description} disabled={busy} onChange={event => setEdit({ ...edit, description: event.target.value })} />
         <label htmlFor="manage-visibility">Visibility</label><select id="manage-visibility" value={edit.privacyStatus} disabled={busy} onChange={event => setEdit({ ...edit, privacyStatus: event.target.value })}><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select>
+        <AiMetadata context={`${edit.title}\n${edit.description}`} disabled={busy} onApply={value => setEdit({ ...edit, ...value })} />
         <div className="flex gap-2"><Button type="submit" disabled={busy}>Save changes</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setEdit(null)}>Cancel</Button></div>
       </form>}
       <ConfirmDialog open={!!removing} onOpenChange={open => { if (!open && !busy) setRemoving(null); }} title="Permanently delete this YouTube video?" description={`This removes “${removing?.title ?? ''}” from YouTube permanently. It cannot be undone.`} confirmLabel={busy ? 'Deleting…' : 'Delete permanently'} cancelLabel="Keep video" onConfirm={() => { if (!busy) void remove(); }} />

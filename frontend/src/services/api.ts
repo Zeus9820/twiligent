@@ -262,6 +262,7 @@ async function uploadImage(file: File, config: MediaStorageConfig): Promise<stri
 
 export interface ManagedVideo { id: string; title: string; description: string; privacyStatus: string }
 export const api = {
+    generateMetadata: (context: string) => request<{ title: string; description: string }>('/ai/metadata', { method: 'POST', body: JSON.stringify({ context }) }),
     getManagedVideo: (id: string, videoId: string) => request<ManagedVideo>(`/accounts/${id}/youtube-studio/videos/${videoId}`),
     getIGManagement: (id: string) => request<{ canDelete: boolean; canManageComments: boolean }>(`/accounts/${id}/ig-management`),
     setIGComments: (id: string, mediaId: string, enabled: boolean) => request(`/accounts/${id}/ig-media/${mediaId}/comments`, { method: 'PUT', body: JSON.stringify({ enabled }) }),

@@ -17,3 +17,7 @@ test('rejects truncation, empty and invalid metadata', () => {
 test('accepts complete validated metadata despite token-limit finish flag', () => {
     assert.equal(parseAiMetadata({ choices: [{ finish_reason: 'length', message: { content: json } }] }).title, 'Gaming clip');
 });
+test('filters unsafe, overlong and duplicate alternative titles', () => {
+    const result = parseAiMetadata({ response: JSON.stringify({ title: 'Urban Reign Mission 73', description: 'Gameplay', titles: ['Urban Reign Mission 73', '<bad>', 'x'.repeat(101), 'Urban Reign Mission 73', 42, 'Mission 73 combat'] }) });
+    assert.deepEqual(result.titles, ['Urban Reign Mission 73', 'Mission 73 combat']);
+});

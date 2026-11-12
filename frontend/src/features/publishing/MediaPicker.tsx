@@ -55,22 +55,19 @@ export default function MediaPicker({ form, selectedType }: MediaPickerProps) {
         {file ? (
           <MediaPreview file={file} filePreview={form.filePreview as string} selectedType={selectedType} onClear={form.clearFile} />
         ) : (
-          <button
-            type="button"
-            onClick={() => contentType && fileInputRef.current?.click()}
-            disabled={!contentType}
+          <div
             className={cn(
-              'flex w-full flex-col items-center gap-2 rounded-card border border-dashed p-10 text-center transition-colors duration-(--duration-fast)',
+              'relative flex w-full flex-col items-center gap-2 rounded-card border border-dashed p-10 text-center transition-colors duration-(--duration-fast) focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
               contentType ? 'border-line-strong/50 hover:border-brand hover:bg-brand-soft/30' : 'cursor-not-allowed border-line opacity-60',
             )}
           >
+            <input ref={fileInputRef} type="file" accept={selectedType?.accept || 'video/mp4,video/quicktime'} onChange={form.handleFileSelect} disabled={!contentType} aria-label="Choose a video or photo file" className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" />
             <Upload className="size-8 stroke-[1.5] text-ink-faint" />
             <span className="text-sm font-medium text-ink">{contentType ? 'Choose a file' : 'Choose a content type first'}</span>
             {selectedType && <span className="text-caption text-ink-faint">{selectedType.desc}</span>}
-          </button>
+          </div>
         )}
-        <input ref={fileInputRef} type="file" hidden accept={selectedType?.accept || '*'} onChange={form.handleFileSelect} aria-label="Media file" />
       </div>
     </SurfaceBox>
   );

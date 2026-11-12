@@ -33,3 +33,13 @@ export const handleYouTubeStudioCallback = controller.createHandlers(async c => 
         return c.redirect(`${service.frontendUrl}${target}?youtube_studio_error=${message}`);
     }
 });
+
+export const listManagedVideos = controller.createHandlers(async c => c.json(await servicesFor(c).youtubeStudio.listManagedVideos(c.get('userId'), pathParam(c, 'id'), c.req.query('pageToken'))));
+export const editManagedVideo = controller.createHandlers(async c => {
+    await servicesFor(c).youtubeStudio.editVideo(c.get('userId'), pathParam(c, 'id'), pathParam(c, 'videoId'), await c.req.json());
+    return c.json({ success: true });
+});
+export const deleteManagedVideo = controller.createHandlers(async c => {
+    await servicesFor(c).youtubeStudio.deleteVideo(c.get('userId'), pathParam(c, 'id'), pathParam(c, 'videoId'));
+    return c.json({ success: true });
+});

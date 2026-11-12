@@ -5,7 +5,7 @@ import type { AppConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { YouTubeStudioSummary } from '../../shared/types/youtube.ts';
 
-const SCOPES = ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/yt-analytics.readonly', 'https://www.googleapis.com/auth/youtube.upload'];
+const SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl', 'https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/yt-analytics.readonly', 'https://www.googleapis.com/auth/youtube.upload'];
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const REPORT_URL = 'https://youtubeanalytics.googleapis.com/v2/reports';
 
@@ -52,7 +52,53 @@ export function createYouTubeStudioService({ accounts, config, context }: { acco
         if (!response.ok) throw new UpstreamError('Google could not authorize this YouTube channel. Please reconnect and try again.');
         return await response.json() as GoogleToken;
     }
+    async function videoAccess(userId: string, accountId: string) {
+        const account = await channel(userId, accountId);
+        const s = settings();
+        if (!account.encryptedYouTubeRefreshToken) throw new ValidationError('Reconnect YouTube to manage videos.');
+        const refresh_token = await decryptYouTubeToken(account.encryptedYouTubeRefreshToken, s.tokenKey, ownerOf(userId, accountId));
+        const token = await tokenRequest(new URLSearchParams({ client_id: s.clientId, client_secret: s.clientSecret, refresh_token, grant_type: 'refresh_token' }));
+        if (!token.access_token) throw new ValidationError('Reconnect YouTube to manage videos.');
+        async function call(path: string, init: RequestInit = {}) {
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/${path}`, { ...init, headers: { Authorization: `Bearer ${token.access_token}`, 'Content-Type': 'application/json' }, signal: context.signal });
+            if (!response.ok) throw new UpstreamError('YouTube rejected this action. Reconnect and approve video management access, then try again.');
+            return response;
+        }
+        return { account, call };
+    }
+    interface Video { id: string; snippet: { channelId: string; title: string; description: string; categoryId: string; tags?: string[]; defaultLanguage?: string; defaultAudioLanguage?: string }; status: { privacyStatus: string; embeddable?: boolean; license?: string; publicStatsViewable?: boolean; selfDeclaredMadeForKids?: boolean; containsSyntheticMedia?: boolean; publishAt?: string } }
+    async function ownedVideo(access: Awaited<ReturnType<typeof videoAccess>>, id: string): Promise<Video> {
+        if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) throw new ValidationError('Invalid video ID.');
+        const data = await (await access.call(`videos?part=snippet,status&id=${id}`)).json() as { items?: Video[] };
+        const video = data.items?.[0];
+        if (!video || video.snippet.channelId !== access.account.channelId) throw new NotFoundError('Video not found on this channel.');
+        return video;
+    }
     return {
+        async listManagedVideos(userId: string, accountId: string, pageToken = '') {
+            const access = await videoAccess(userId, accountId);
+            const channels = await (await access.call(`channels?part=contentDetails&id=${access.account.channelId}`)).json() as { items?: Array<{ contentDetails: { relatedPlaylists: { uploads: string } } }> };
+            const playlist = channels.items?.[0]?.contentDetails.relatedPlaylists.uploads;
+            if (!playlist) throw new NotFoundError('Channel uploads not found.');
+            const page = await (await access.call(`playlistItems?part=contentDetails&maxResults=50&playlistId=${encodeURIComponent(playlist)}&pageToken=${encodeURIComponent(pageToken)}`)).json() as { nextPageToken?: string; items?: Array<{ contentDetails: { videoId: string } }> };
+            const ids = (page.items ?? []).map(item => item.contentDetails.videoId).join(',');
+            const videos = ids ? await (await access.call(`videos?part=snippet,status&id=${ids}`)).json() as { items?: Video[] } : { items: [] };
+            return { videos: (videos.items ?? []).map(video => ({ id: video.id, title: video.snippet.title, description: video.snippet.description, privacyStatus: video.status.privacyStatus })), nextPageToken: page.nextPageToken ?? null };
+        },
+        async editVideo(userId: string, accountId: string, id: string, input: unknown) {
+            if (!input || typeof input !== 'object') throw new ValidationError('Invalid video details.');
+            const edit = input as { title?: unknown; description?: unknown; privacyStatus?: unknown };
+            if (typeof edit.title !== 'string' || !edit.title.trim() || [...edit.title].length > 100 || /[<>]/.test(edit.title) || typeof edit.description !== 'string' || edit.description.length > 5000 || /[<>]/.test(edit.description) || !['public', 'private', 'unlisted'].includes(String(edit.privacyStatus))) throw new ValidationError('Provide a valid title, description and visibility.');
+            const access = await videoAccess(userId, accountId);
+            const video = await ownedVideo(access, id);
+            const { categoryId, tags, defaultLanguage, defaultAudioLanguage } = video.snippet;
+            await access.call('videos?part=snippet,status', { method: 'PUT', body: JSON.stringify({ id, snippet: { title: edit.title.trim(), description: edit.description, categoryId, tags, defaultLanguage, defaultAudioLanguage }, status: { privacyStatus: edit.privacyStatus, embeddable: video.status.embeddable, license: video.status.license, publicStatsViewable: video.status.publicStatsViewable, selfDeclaredMadeForKids: video.status.selfDeclaredMadeForKids, containsSyntheticMedia: video.status.containsSyntheticMedia, ...(edit.privacyStatus === 'private' && video.status.publishAt ? { publishAt: video.status.publishAt } : {}) } }) });
+        },
+        async deleteVideo(userId: string, accountId: string, id: string) {
+            const access = await videoAccess(userId, accountId);
+            await ownedVideo(access, id);
+            await access.call(`videos?id=${id}`, { method: 'DELETE' });
+        },
         frontendUrl: config.youtubeStudio?.frontendUrl || config.instagram.frontendUrl,
         async accountIdFromState(state: string): Promise<string | null> {
             const payload = await verifyOAuthState(state, settings().clientSecret);

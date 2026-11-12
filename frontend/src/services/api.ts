@@ -260,7 +260,11 @@ async function uploadImage(file: File, config: MediaStorageConfig): Promise<stri
     return uploadMedia(file, config);
 }
 
+export interface ManagedVideo { id: string; title: string; description: string; privacyStatus: string }
 export const api = {
+    listManagedVideos: (id: string, page = '') => request<{ videos: ManagedVideo[]; nextPageToken: string | null }>(`/accounts/${id}/youtube-studio/videos?pageToken=${encodeURIComponent(page)}`),
+    editManagedVideo: (id: string, video: ManagedVideo) => request(`/accounts/${id}/youtube-studio/videos/${video.id}`, { method: 'PUT', body: JSON.stringify(video) }),
+    deleteManagedVideo: (id: string, videoId: string) => request(`/accounts/${id}/youtube-studio/videos/${videoId}`, { method: 'DELETE' }),
     health: () => request<HealthResponse>('/health'),
 
     // Server key status - all keys are env vars, this just returns configured: true/false

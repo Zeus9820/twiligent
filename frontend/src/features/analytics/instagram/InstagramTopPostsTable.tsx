@@ -15,6 +15,7 @@ export interface InstagramTopPostsTableProps {
 export default function InstagramTopPostsTable({ posts, title = 'Top performing posts' }: InstagramTopPostsTableProps) {
   return (
     <SurfaceBox title={title} content={false} className="overflow-hidden">
+      <p className="p-4 text-sm text-ink-muted">To edit a published caption, archive or delete a Reel, open the post in Instagram. Published media editing and deletion are unavailable through this integration.</p>
       <Table>
         <TableHeader>
           <TableRow>
@@ -42,7 +43,7 @@ export default function InstagramTopPostsTable({ posts, title = 'Top performing 
               <TableCell className="text-small text-ink-faint">{fmtDate(post.timestamp)}</TableCell>
               <TableCell>
                 {post.permalink && (
-                  <Button variant="ghost" size="icon-xs" render={<a href={post.permalink} target="_blank" rel="noopener noreferrer" aria-label="Open post on Instagram" />}>
+                  <Button variant="ghost" size="icon-xs" render={<a href={post.permalink} target="_blank" rel="noopener noreferrer" aria-label="Manage post on Instagram" />}>
                     <ExternalLink />
                   </Button>
                 )}

@@ -1,3 +1,4 @@
+import PublishedVideoManager from './PublishedVideoManager';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import SurfaceBox from '@/components/SurfaceBox';
@@ -24,6 +25,7 @@ export default function YouTubeStudioPanel({ accountId, connected }: { accountId
   }
 
   return (
+    <>
     <SurfaceBox title="YouTube Studio analytics" subheader="Private channel insights for the last 28 days. YouTube data may arrive with a delay.">
       <div className="flex flex-col gap-4">
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
@@ -45,5 +47,8 @@ export default function YouTubeStudioPanel({ accountId, connected }: { accountId
         </>}
       </div>
     </SurfaceBox>
+    <Button variant="outline" onClick={connect} disabled={loading}>Reconnect YouTube for video management</Button>
+    <PublishedVideoManager key={accountId} accountId={accountId} />
+    </>
   );
 }

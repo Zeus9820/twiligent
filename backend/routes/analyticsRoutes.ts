@@ -3,9 +3,12 @@ import {
     getChannelAnalytics, getChannelVideos, getComparison, getVideoLibrary, getInstagramAnalytics, getInstagramMedia,
 } from '../controllers/analyticsController.ts';
 import type { AppEnv } from '../types/app.ts';
-import { getYouTubeStudioUrl, getYouTubeStudioSummary, startYouTubeShortUpload } from '../controllers/youtubeStudioController.ts';
+import { listManagedVideos, editManagedVideo, deleteManagedVideo, getYouTubeStudioUrl, getYouTubeStudioSummary, startYouTubeShortUpload } from '../controllers/youtubeStudioController.ts';
 
 const router = new Hono<AppEnv>();
+router.get('/accounts/:id/youtube-studio/videos', ...listManagedVideos);
+router.put('/accounts/:id/youtube-studio/videos/:videoId', ...editManagedVideo);
+router.delete('/accounts/:id/youtube-studio/videos/:videoId', ...deleteManagedVideo);
 
 router.get('/accounts/:id/analytics', ...getChannelAnalytics);
 router.get('/accounts/:id/youtube-studio/connect', ...getYouTubeStudioUrl);

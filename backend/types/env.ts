@@ -1,6 +1,6 @@
 // Worker secrets set with `wrangler secret put`; see docs/architecture/cloudflare/WORKERS.md
 export interface Env {
-    AI?: { run(model: string, input: { messages: Array<{ role: string; content: string }>; max_completion_tokens: number; temperature: number }): Promise<unknown> };
+    AI?: { run(model: string, input: { messages: Array<{ role: string; content: string | Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> }>; max_completion_tokens: number; temperature: number }): Promise<unknown> };
     SUPABASE_URL: string;
     SUPABASE_SERVICE_KEY: string;
     SUPABASE_ANON_KEY: string;

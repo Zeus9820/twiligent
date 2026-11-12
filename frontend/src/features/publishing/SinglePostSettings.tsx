@@ -42,7 +42,7 @@ export default function SinglePostSettings({ form, publish, igAccounts, youtubeA
   );
   return (
     <DetailPanel title="Post settings" footer={footer}>
-      <PublishDestinations
+      <PublishDestinations videoFile={form.file}
         instagramAccounts={igAccounts} youtubeAccounts={youtubeAccounts}
         instagramEnabled={form.publishInstagram} onInstagramEnabled={form.setPublishInstagram}
         instagramAccount={form.selectedAccount} onInstagramAccount={form.setSelectedAccount}

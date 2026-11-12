@@ -43,3 +43,5 @@ export const deleteManagedVideo = controller.createHandlers(async c => {
     await servicesFor(c).youtubeStudio.deleteVideo(c.get('userId'), pathParam(c, 'id'), pathParam(c, 'videoId'));
     return c.json({ success: true });
 });
+
+export const getManagedVideo = controller.createHandlers(async c => c.json(await servicesFor(c).youtubeStudio.getManagedVideo(c.get('userId'), pathParam(c, 'id'), pathParam(c, 'videoId'))));

@@ -1,3 +1,4 @@
+import EditVideoButton from './EditVideoButton';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +47,7 @@ function VideoRow({ video, rank, showChannel }: VideoRowProps) {
       </TableCell>
       <TableCell className="text-right text-ink-muted">{fmtDuration(video.durationSeconds)}</TableCell>
       <TableCell className="text-right text-small text-ink-faint">{fmtDate(video.publishedAt)}</TableCell>
+      <TableCell><EditVideoButton video={video} /></TableCell>
       <TableCell>
         <Tooltip>
           <TooltipTrigger render={<Button variant="ghost" size="icon-xs" render={<a href={watchUrl(video.videoId)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${video.title} on YouTube`} />} />}>
@@ -73,6 +75,7 @@ export default function VideoListTable({ paged, sort, onSort, showChannel }: Vid
             <TableHead className="text-right"><VideoSortHeader field="engagementRate" label="Engagement" sort={sort} onSort={onSort} align="right" /></TableHead>
             <TableHead className="text-right"><VideoSortHeader field="durationSeconds" label="Length" sort={sort} onSort={onSort} align="right" /></TableHead>
             <TableHead className="text-right"><VideoSortHeader field="publishedAt" label="Published" sort={sort} onSort={onSort} align="right" /></TableHead>
+            <TableHead>Manage</TableHead>
             <TableHead className="w-10"><span className="sr-only">Watch</span></TableHead>
           </TableRow>
         </TableHeader>

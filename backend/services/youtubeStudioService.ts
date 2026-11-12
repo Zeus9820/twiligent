@@ -80,6 +80,10 @@ export function createYouTubeStudioService({ accounts, config, context }: { acco
         return video;
     }
     return {
+        async getManagedVideo(userId: string, accountId: string, id: string) {
+            const video = await ownedVideo(await videoAccess(userId, accountId), id);
+            return { id: video.id, title: video.snippet.title, description: video.snippet.description, privacyStatus: video.status.privacyStatus };
+        },
         async listManagedVideos(userId: string, accountId: string, pageToken = '') {
             const access = await videoAccess(userId, accountId);
             const channels = await (await access.call(`channels?part=contentDetails&id=${access.account.channelId}`)).json() as { items?: Array<{ contentDetails: { relatedPlaylists: { uploads: string } } }> };

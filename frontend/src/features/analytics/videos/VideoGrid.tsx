@@ -1,3 +1,4 @@
+import EditVideoButton from './EditVideoButton';
 import { Eye, MessageSquare, ThumbsUp } from 'lucide-react';
 import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { fmtCount, fmtDuration, fmtNum, timeAgo } from '../../../utils/formatters';
@@ -13,8 +14,8 @@ export default function VideoGrid({ items, showChannel }: VideoGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
       {items.map((video, i) => (
+        <div key={`${video.videoId}-${i}`} className="flex flex-col gap-2">
         <MediaCard
-          key={`${video.videoId}-${i}`}
           href={watchUrl(video.videoId)}
           image={video.thumbnail}
           title={video.title}
@@ -28,6 +29,8 @@ export default function VideoGrid({ items, showChannel }: VideoGridProps) {
             </>
           }
         />
+        <EditVideoButton video={video} />
+        </div>
       ))}
     </div>
   );

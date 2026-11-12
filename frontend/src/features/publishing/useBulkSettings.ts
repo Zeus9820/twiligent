@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { defaultBulkStartDate } from './scheduleHelpers.ts';
 import type { BulkSettings } from './publishHelpers.ts';
 
 const INITIAL_SETTINGS: BulkSettings = {
   account: '',
+  publishInstagram: true,
+  youtubeAccount: '',
+  youtubePrivacy: 'private',
   contentType: 'REELS',
   sharedCaption: '',
   collaborators: '',
@@ -19,13 +22,13 @@ const INITIAL_SETTINGS: BulkSettings = {
 export function useBulkSettings() {
   const [settings, setSettings] = useState(INITIAL_SETTINGS);
 
-  const setSetting = <K extends keyof BulkSettings>(name: K, value: BulkSettings[K]) => setSettings(prev => ({ ...prev, [name]: value }));
+  const setSetting = useCallback(<K extends keyof BulkSettings>(name: K, value: BulkSettings[K]) => setSettings(prev => ({ ...prev, [name]: value })), []);
 
   // the first files added default to one post a day from 08:00 the next day
-  const applyFirstBatchDefaults = () => {
+  const applyFirstBatchDefaults = useCallback(() => {
     const startDate = defaultBulkStartDate();
     setSettings(prev => ({ ...prev, scheduleMode: true, interval: 1440, startTime: '08:00', startDate }));
-  };
+  }, []);
 
   return { settings, setSetting, applyFirstBatchDefaults };
 }

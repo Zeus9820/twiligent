@@ -1,5 +1,5 @@
 export type QueueItemStatus =
-  | 'pending' | 'uploading' | 'creating' | 'processing' | 'publishing' | 'scheduling' | 'done' | 'scheduled' | 'error';
+  | 'pending' | 'uploading' | 'uploaded' | 'creating' | 'processing' | 'publishing' | 'scheduling' | 'done' | 'scheduled' | 'error';
 
 export interface QueueItem {
   id: number;
@@ -10,6 +10,10 @@ export interface QueueItem {
   progress: number;
   error: string | null;
   mediaId: string | null;
+  mediaUrl?: string;
+  youtubeTitle: string;
+  youtubeDescription: string;
+  youtubeVideoId: string | null;
 }
 
 export type QueueItemPatch = Partial<Omit<QueueItem, 'id' | 'file' | 'preview'>>;
@@ -37,7 +41,7 @@ export function bulkStatsOf(files: readonly Pick<QueueItem, 'status'>[]): BulkSt
   const countOf = (status: QueueItemStatus) => files.filter(file => file.status === status).length;
   return {
     total: files.length,
-    pending: countOf('pending'),
+    pending: countOf('pending') + countOf('uploaded') + countOf('error'),
     done: countOf('done'),
     scheduled: countOf('scheduled'),
     errors: countOf('error'),
@@ -71,7 +75,7 @@ export function isVideoFile(file: Pick<File, 'type'>): boolean {
 }
 
 export function newQueueItem(file: File, id: number): QueueItem {
-  return { id, file, preview: URL.createObjectURL(file), caption: '', status: 'pending', progress: 0, error: null, mediaId: null };
+  return { id, file, preview: URL.createObjectURL(file), caption: '', youtubeTitle: file.name.replace(/\.[^.]+$/, '').slice(0, 100), youtubeDescription: '', youtubeVideoId: null, status: 'pending', progress: 0, error: null, mediaId: null };
 }
 
 export function revokePreview(item: { preview?: string } | undefined): void {

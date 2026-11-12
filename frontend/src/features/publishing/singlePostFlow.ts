@@ -76,6 +76,6 @@ export async function publishSinglePost(
   });
   progress.setPublishStatus('publishing');
   progress.setStatusMessage('Publishing to Instagram');
-  const { mediaId } = await api.publishIGContainer(form.selectedAccount, containerId);
+  const { mediaId } = await api.publishIGContainer(form.selectedAccount, containerId, [uploaded.mediaUrl, uploaded.coverUrl].filter((url): url is string => Boolean(url)));
   return mediaId;
 }

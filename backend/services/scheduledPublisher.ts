@@ -1,5 +1,6 @@
 import { buildMediaParams, createMediaContainer, fetchContainerStatus, publishMediaContainer } from './instagram/instagramPublishing.ts';
 import { publishableAccount } from './publishingService.ts';
+import { deletePublishedMedia } from '../lib/mediaStorage.ts';
 import { DatabaseError, NotFoundError, UpstreamError, UpstreamTimeoutError, isAbortError } from '../lib/errors.ts';
 import { errorFields } from '../lib/logger.ts';
 import {
@@ -16,6 +17,8 @@ export interface ScheduledPublisherDeps {
     accounts: AccountRepository;
     posts: ScheduledPostRepository;
     context: RequestContext;
+    mediaBucket?: R2Bucket;
+    mediaPublicUrl?: string;
 }
 
 export interface ScheduledPublisher {
@@ -47,7 +50,7 @@ function isTransientFailure(err: unknown): boolean {
 }
 
 // publishes every user's due posts, so it runs from the cron job or the manual trigger, never per user
-export function createScheduledPublisher({ accounts, posts, context }: ScheduledPublisherDeps): ScheduledPublisher {
+export function createScheduledPublisher({ accounts, posts, context, mediaBucket, mediaPublicUrl }: ScheduledPublisherDeps): ScheduledPublisher {
     const { signal, log } = context;
 
     // reels and stories need processing; other media only need a short pause
@@ -95,6 +98,16 @@ export function createScheduledPublisher({ accounts, posts, context }: Scheduled
         return (await fetchContainerStatus(containerId, account.accessToken, signal)).statusCode;
     }
 
+    async function cleanupPublishedMedia(post: ScheduledPost): Promise<void> {
+        for (const mediaUrl of [post.mediaUrl, post.coverUrl ?? undefined]) {
+            try {
+                await deletePublishedMedia(mediaBucket, mediaPublicUrl, mediaUrl);
+            } catch (err) {
+                log.warn('scheduled published media cleanup failed', { postId: post.id, ...errorFields(err) });
+            }
+        }
+    }
+
     // an error before Instagram could have published needs no check; after that, the container's status decides
     async function settleFailure(post: ScheduledPost, attempt: Attempt, err: unknown, transientError = isTransientFailure(err)): Promise<Settled> {
         let statusCode: InstagramContainerStatusCode | null;
@@ -106,6 +119,7 @@ export function createScheduledPublisher({ accounts, posts, context }: Scheduled
         }
         if (statusCode === 'PUBLISHED') {
             await posts.updateById(post.id, { status: 'published', publishedAt: new Date().toISOString(), error: null });
+            await cleanupPublishedMedia(post);
             return 'published';
         }
 
@@ -146,6 +160,7 @@ export function createScheduledPublisher({ accounts, posts, context }: Scheduled
         try {
             const mediaId = await publishPost(post, attempt);
             await posts.updateById(post.id, { status: 'published', publishedMediaId: mediaId, publishedAt: new Date().toISOString(), error: null });
+            await cleanupPublishedMedia(post);
             log.info('scheduled post published', { postId: post.id, mediaId });
             return 'published';
         } catch (err) {

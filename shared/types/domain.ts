@@ -29,6 +29,9 @@ export interface Account {
 
     // youtube
     channelId?: string;
+    youtubeAnalyticsConnected?: boolean;
+    youtubePublishingConnected?: boolean;
+    encryptedYouTubeRefreshToken?: string;
     description?: string;
     customUrl?: string;
     publishedAt?: string;
@@ -49,6 +52,7 @@ export interface Account {
     // instagram
     // null when neither the profile nor the request had an id
     igUserId?: string | null;
+    instagramProvider?: 'windsor' | null;
     biography?: string;
     website?: string;
     profilePictureUrl?: string;
@@ -75,7 +79,7 @@ export interface Account {
 export type NewAccount = Omit<Account, 'platform'> & { platform?: Platform };
 
 // what an account looks like in a response: secrets removed, cookie presence kept
-export type SafeAccount = Omit<Account, 'accessToken' | 'cookie' | 'encryptedPassword' | 'encryptedTotpSecret' | 'authToken' | 'ct0'> & {
+export type SafeAccount = Omit<Account, 'accessToken' | 'cookie' | 'encryptedPassword' | 'encryptedTotpSecret' | 'authToken' | 'ct0' | 'encryptedYouTubeRefreshToken'> & {
     hasCookie: boolean;
 };
 

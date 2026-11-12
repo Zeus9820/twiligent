@@ -43,6 +43,7 @@ export const POST_STATUS: Record<PostStatus, StatusEntry> = {
 export const BULK_STATUS: Record<QueueItemStatus, StatusEntry> = {
   pending:    { label: 'Pending',    variant: 'secondary' },
   uploading:  { label: 'Uploading',  variant: 'info' },
+  uploaded:   { label: 'Uploaded',   variant: 'success' },
   creating:   { label: 'Creating',   variant: 'info' },
   processing: { label: 'Processing', variant: 'info' },
   publishing: { label: 'Publishing', variant: 'info' },

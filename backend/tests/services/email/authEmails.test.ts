@@ -9,7 +9,7 @@ test('a sign-up email carries the code and a link to Supabase Auth\'s verify end
     const [email, ...rest] = composeAuthEmails(hook(), SUPABASE_URL);
     assert.equal(rest.length, 0);
     assert.equal(email.to, 'new@example.com');
-    assert.equal(email.subject, 'Your Twiligent verification code');
+    assert.equal(email.subject, 'Your Kratos Studio verification code');
     assert.equal(email.notice, false);
     const link = 'https://project.supabase.co/auth/v1/verify?token=hash-abc&type=signup&redirect_to=https%3A%2F%2Fapp.example.com%2F';
     assert.ok(email.text.includes('\n123456\n'));
@@ -21,11 +21,11 @@ test('a sign-up email carries the code and a link to Supabase Auth\'s verify end
 test('without a redirect the link leaves redirect_to out, and without a hash there is no link', () => {
     const [noRedirect] = composeAuthEmails(hook({ action: 'recovery', redirectTo: '' }), SUPABASE_URL);
     assert.ok(noRedirect.text.includes('verify?token=hash-abc&type=recovery\n'));
-    assert.equal(noRedirect.subject, 'Reset your Twiligent password');
+    assert.equal(noRedirect.subject, 'Reset your Kratos Studio password');
     assert.ok(noRedirect.text.startsWith('Enter this code on the sign-in page, with the new password you want to use.'));
     const [reauth] = composeAuthEmails(hook({ action: 'reauthentication', tokenHash: '' }), SUPABASE_URL);
     assert.equal(reauth.text.includes('http'), false);
-    assert.equal(reauth.subject, 'Your Twiligent confirmation code');
+    assert.equal(reauth.subject, 'Your Kratos Studio confirmation code');
 });
 
 test('values from the payload are escaped in the HTML', () => {
@@ -53,7 +53,7 @@ test('an email change without Secure Email Change sends one email to the new add
 test('a notification is a notice without a code, and an unknown action or a missing code sends nothing', () => {
     const [notice] = composeAuthEmails(hook({ action: 'password_changed_notification', token: '', tokenHash: '' }), SUPABASE_URL);
     assert.equal(notice.notice, true);
-    assert.ok(notice.text.startsWith('The password for your Twiligent account was changed.'));
+    assert.ok(notice.text.startsWith('The password for your Kratos Studio account was changed.'));
     assert.deepEqual(composeAuthEmails(hook({ action: 'something_new' }), SUPABASE_URL), []);
     assert.deepEqual(composeAuthEmails(hook({ token: '' }), SUPABASE_URL), []);
 });

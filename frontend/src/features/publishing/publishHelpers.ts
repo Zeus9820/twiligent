@@ -19,6 +19,9 @@ export interface SinglePostFields extends ScheduleFieldValues {
 
 export interface BulkSettings {
   account: string;
+  publishInstagram?: boolean;
+  youtubeAccount?: string;
+  youtubePrivacy?: 'private' | 'unlisted' | 'public';
   contentType: ContentTypeValue;
   sharedCaption: string;
   collaborators: string;
@@ -61,6 +64,8 @@ export interface UploadFailure {
 
 export interface SinglePostCheck {
   selectedAccount: string;
+  publishInstagram?: boolean;
+  youtubeAccount?: string;
   file: File | null;
   contentType: string;
   hasCloudConfig: boolean;
@@ -156,10 +161,13 @@ export function singleUploadMessage(err: UploadFailure): string {
   return err.message;
 }
 
-export function singlePostError({ selectedAccount, file, contentType, hasCloudConfig, fields, now }: SinglePostCheck): string {
-  if (!selectedAccount || !file || !contentType) return 'Choose an account, a content type and a file before publishing.';
-  if (contentType === 'REELS' && file.size > MAX_REEL_FILE_BYTES) return 'Reels must be 1 GB or smaller to publish through Instagram.';
-  if (!hasCloudConfig) return 'Media uploads are unavailable. Check the R2 storage setup.';
+export function singlePostError({ selectedAccount, publishInstagram = true, youtubeAccount, file, contentType, hasCloudConfig, fields, now }: SinglePostCheck): string {
+  const instagramTarget = publishInstagram && Boolean(selectedAccount);
+  if ((!instagramTarget && !youtubeAccount) || !file || !contentType) return 'Choose at least one connected account, a content type and a file before publishing.';
+  if (youtubeAccount && contentType !== 'REELS') return 'YouTube Shorts can only be published from a Reel video.';
+  if (youtubeAccount && fields.scheduleMode) return 'YouTube Shorts scheduling is not available yet. Turn off scheduling or remove the YouTube destination.';
+  if (instagramTarget && contentType === 'REELS' && file.size > MAX_REEL_FILE_BYTES) return 'Reels must be 1 GB or smaller to publish through Instagram.';
+  if (instagramTarget && !hasCloudConfig) return 'Media uploads are unavailable. Check the R2 storage setup.';
   if (!fields.scheduleMode) return '';
   if (!fields.scheduleDate || !fields.scheduleTime) return 'Set a date and time for the scheduled post.';
   if (new Date(`${fields.scheduleDate}T${fields.scheduleTime}`) <= now) return 'Pick a time in the future.';
@@ -171,9 +179,12 @@ export function bulkBaseTime(settings: Pick<BulkSettings, 'scheduleMode' | 'star
 }
 
 export function bulkStartError({ settings, fileCount, files, hasCloudConfig, now }: BulkStartCheck): string {
-  if (!settings.account || fileCount === 0 || !settings.contentType) return 'Choose an account, a content type and at least one file.';
-  if (settings.contentType === 'REELS' && files?.some(file => file.size > MAX_REEL_FILE_BYTES)) return 'Each Reel must be 1 GB or smaller to publish through Instagram.';
-  if (!hasCloudConfig) return 'Media uploads are unavailable. Check the R2 storage setup.';
+  const instagramTarget = (settings.publishInstagram ?? true) && Boolean(settings.account);
+  if ((!instagramTarget && !settings.youtubeAccount) || fileCount === 0 || !settings.contentType) return 'Choose at least one connected account, a content type and at least one file.';
+  if (settings.youtubeAccount && settings.contentType !== 'REELS') return 'YouTube Shorts can only be published from Reel videos.';
+  if (settings.youtubeAccount && settings.scheduleMode) return 'YouTube Shorts scheduling is not available yet. Turn off scheduling or remove the YouTube destination.';
+  if (instagramTarget && settings.contentType === 'REELS' && files?.some(file => file.size > MAX_REEL_FILE_BYTES)) return 'Each Reel must be 1 GB or smaller to publish through Instagram.';
+  if (instagramTarget && !hasCloudConfig) return 'Media uploads are unavailable. Check the R2 storage setup.';
   if (settings.scheduleMode && (!settings.startDate || !settings.startTime)) return 'Set a start date and time for the schedule.';
   const baseTime = bulkBaseTime(settings);
   if (baseTime && baseTime <= now) return 'Pick a start time in the future.';

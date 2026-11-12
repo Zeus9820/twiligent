@@ -20,7 +20,7 @@ export function pathParam(c: AppContext, name: string): string {
 // the request's services, built from the clients the middleware created and the request context
 export function servicesFor(c: AppContext): Services {
     const clients = { supabase: c.get('supabase'), redis: c.get('redis'), rateLimitRedis: c.get('rateLimitRedis') };
-    return createServices(clients, readConfig(c.env), requestContextOf(c));
+    return createServices(clients, readConfig(c.env), requestContextOf(c), c.env);
 }
 
 // work after the response gets its own deadline: the request's signal ends with the response, and the Worker keeps
@@ -33,6 +33,6 @@ export function inBackground(c: AppContext, label: string, work: (services: Serv
     const log = createLogger({ requestId, background: label });
     const context = { requestId, signal: AbortSignal.timeout(BACKGROUND_DEADLINE_MS), log };
     const clients = { supabase: c.get('supabase'), redis: c.get('redis'), rateLimitRedis: c.get('rateLimitRedis') };
-    const services = createServices(clients, readConfig(c.env), context);
+    const services = createServices(clients, readConfig(c.env), context, c.env);
     c.executionCtx.waitUntil(work(services).catch(err => log.error(`${label} failed`, errorFields(err))));
 }

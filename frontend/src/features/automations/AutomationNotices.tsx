@@ -16,7 +16,7 @@ export default function AutomationNotices({ settings }: AutomationNoticesProps) 
           <AlertCircle />
           <AlertTitle>Comment events are not set up on this server</AlertTitle>
           <AlertDescription>
-            Rules can be written, but no comment reaches Twiligent until the INSTAGRAM_WEBHOOK_VERIFY_TOKEN and INSTAGRAM_APP_SECRET Worker
+            Rules can be written, but no comment reaches Kratos Studio until the INSTAGRAM_WEBHOOK_VERIFY_TOKEN and INSTAGRAM_APP_SECRET Worker
             secrets are set and the webhook is added in the Meta dashboard. Follow{' '}
             <a href={docsUrl('/self-host/comment-automation')} target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4">
               Comment automation setup

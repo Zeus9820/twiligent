@@ -64,6 +64,8 @@ export default function InstagramAnalytics() {
 
       {topPosts.length > 0 && <InstagramTopPostsTable posts={topPosts} />}
 
+      {(analyticsData.topReelsByViews?.length ?? 0) > 0 && <InstagramTopPostsTable title="Top Reels by views" posts={analyticsData.topReelsByViews || []} />}
+
       {charts.typeRows.length > 0 && <InstagramTypeSummaryTable rows={charts.typeRows} />}
 
       <p className="text-center text-caption text-ink-faint">Last updated {timeAgo(account.lastUpdated).toLowerCase()}</p>

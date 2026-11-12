@@ -11,7 +11,7 @@ import type { RequestContext } from '../types/context.ts';
 export const RECIPIENT_DAILY_LIMIT = 5;
 
 // shown on the sign-up form, which also points to the Google button
-export const DAILY_LIMIT_MESSAGE = 'Twiligent has sent all the verification emails it can today. Sign in with Google instead, or try again tomorrow.';
+export const DAILY_LIMIT_MESSAGE = 'Kratos Studio has sent all the verification emails it can today. Sign in with Google instead, or try again tomorrow.';
 export const RECIPIENT_LIMIT_MESSAGE = 'This address has received the most codes allowed today. Use the latest code you received, or try again tomorrow.';
 
 // Resend's answers when the account itself has run out

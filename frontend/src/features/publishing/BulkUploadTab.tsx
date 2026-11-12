@@ -13,21 +13,23 @@ interface BulkUploadTabProps {
   queue: BulkQueue;
   bulkPublish: BulkPublish;
   igAccounts: AppAccount[];
+  youtubeAccounts: AppAccount[];
 }
 
-export default function BulkUploadTab({ bulk, queue, bulkPublish, igAccounts }: BulkUploadTabProps) {
+export default function BulkUploadTab({ bulk, queue, bulkPublish, igAccounts, youtubeAccounts }: BulkUploadTabProps) {
   const stats = bulkStatsOf(queue.files);
   const bulkType = contentTypeOf(bulk.settings.contentType);
   const showResults = queue.processing || stats.done > 0 || stats.scheduled > 0 || stats.errors > 0;
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_28rem]">
       <div className="flex min-w-0 flex-col gap-4">
-        <BulkFileList queue={queue} bulkType={bulkType} />
+        <BulkFileList queue={queue} bulkType={bulkType} youtubeEnabled={Boolean(bulk.settings.youtubeAccount)} />
         {showResults && <BulkResults stats={stats} processing={queue.processing} />}
       </div>
       <BulkSettings
         bulk={bulk}
         igAccounts={igAccounts}
+        youtubeAccounts={youtubeAccounts}
         pending={stats.pending}
         processing={queue.processing}
         onStart={bulkPublish.handleBulkProcess}

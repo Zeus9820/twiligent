@@ -29,6 +29,7 @@ export default function UploadContent() {
   const { accounts, showToast } = useAppContext();
   const cloudConfig = useMediaStorageConfig(accounts);
   const [igAccounts, setIgAccounts] = useState<AppAccount[]>([]);
+  const [youtubeAccounts, setYoutubeAccounts] = useState<AppAccount[]>([]);
   const [uploadMode, setUploadMode] = useState<UploadMode>('single');
   const schedule = useScheduledPosts();
   const { loadScheduledPosts } = schedule;
@@ -42,19 +43,24 @@ export default function UploadContent() {
   const bulkPublish = useBulkPublish({ queue, settings: bulk.settings, cloudConfig, showToast, onScheduled: loadScheduledPosts });
 
   useEffect(() => {
-    const instagramAccounts = (accounts || []).filter(account => account.platform === 'instagram');
+    const instagramAccounts = (accounts || []).filter(account => account.platform === 'instagram' && !account.instagramProvider);
+    const channels = (accounts || []).filter(account => account.platform === 'youtube');
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIgAccounts(instagramAccounts);
+    setYoutubeAccounts(channels);
     if (instagramAccounts.length === 1) setSelectedAccount(instagramAccounts[0].id);
+    if (instagramAccounts.length > 0 && !instagramAccounts.some(account => account.id === bulk.settings.account)) {
+      bulk.setSetting('account', instagramAccounts[0].id);
+    }
     loadScheduledPosts();
-  }, [accounts, setSelectedAccount, loadScheduledPosts]);
+  }, [accounts, setSelectedAccount, loadScheduledPosts, bulk.settings.account, bulk.setSetting]);
 
   const resetAll = () => {
     form.resetForm();
     publish.resetProgress();
   };
 
-  if (igAccounts.length === 0) return <NoInstagramAccount />;
+  if (igAccounts.length === 0 && youtubeAccounts.length === 0) return <NoInstagramAccount />;
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,11 +91,11 @@ export default function UploadContent() {
         </TabsList>
 
         <TabsContent value="single">
-          <SinglePostTab form={form} publish={publish} igAccounts={igAccounts} onReset={resetAll} />
+          <SinglePostTab form={form} publish={publish} igAccounts={igAccounts} youtubeAccounts={youtubeAccounts} onReset={resetAll} />
         </TabsContent>
 
         <TabsContent value="bulk">
-          <BulkUploadTab bulk={bulk} queue={queue} bulkPublish={bulkPublish} igAccounts={igAccounts} />
+          <BulkUploadTab bulk={bulk} queue={queue} bulkPublish={bulkPublish} igAccounts={igAccounts} youtubeAccounts={youtubeAccounts} />
         </TabsContent>
       </Tabs>
 
@@ -98,7 +104,7 @@ export default function UploadContent() {
       )}
 
       <p className="text-caption text-ink-faint">
-        Files upload to Cloudinary first because Instagram needs a public URL. Twiligent then creates an Instagram media container, waits for processing, and publishes it. Publishing needs the instagram_business_content_publish permission. Instagram allows 100 posts per account every 24 hours.
+        Files upload to Cloudflare R2 in retryable multipart chunks because Instagram needs a public URL. Kratos Studio then creates an Instagram media container, waits for processing, and publishes it. Publishing needs the instagram_business_content_publish permission. Instagram allows 100 posts per account every 24 hours.
       </p>
 
       <ScheduledPostDialogs removal={removal} />

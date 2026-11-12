@@ -54,7 +54,7 @@ const ACCOUNT_SECTIONS: AccountSectionInfo[] = [
 ];
 
 export function instagramErrorMessage(code: string): string {
-  return IG_ERRORS[code] || `Instagram connection failed: ${code}. ${TESTER_HINT}`;
+  return IG_ERRORS[code] || `Instagram connection failed: ${code}`;
 }
 
 // oauth returns ?ig_connected=true, ?ig_connected=reconnected or ?ig_error=...; ?add=1 opens the add flow

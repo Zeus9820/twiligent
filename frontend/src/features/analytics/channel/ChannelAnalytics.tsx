@@ -18,6 +18,7 @@ import ChannelPublishingTab from './ChannelPublishingTab';
 import ChannelGrowthTab from './ChannelGrowthTab';
 import ChannelShortsTab from './ChannelShortsTab';
 import ChannelTagsTab from './ChannelTagsTab';
+import YouTubeStudioPanel from './YouTubeStudioPanel';
 
 const BACK = { to: '/', label: 'Overview' };
 
@@ -73,6 +74,7 @@ export default function ChannelAnalytics() {
   return (
     <div className="flex flex-col gap-6">
       <ChannelHeader account={account} channel={channel} back={BACK} onRefresh={loadAnalytics} />
+      {id && <YouTubeStudioPanel accountId={id} connected={!!channel.youtubeAnalyticsConnected} />}
       {analytics.totalVideos === 0 ? (
         <ChannelNoVideos channel={channel} />
       ) : (

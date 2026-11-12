@@ -9,11 +9,12 @@ import type { InstagramTopPost } from '@shared/types/instagram.ts';
 
 export interface InstagramTopPostsTableProps {
   posts: InstagramTopPost[];
+  title?: string;
 }
 
-export default function InstagramTopPostsTable({ posts }: InstagramTopPostsTableProps) {
+export default function InstagramTopPostsTable({ posts, title = 'Top performing posts' }: InstagramTopPostsTableProps) {
   return (
-    <SurfaceBox title="Top performing posts" content={false} className="overflow-hidden">
+    <SurfaceBox title={title} content={false} className="overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>

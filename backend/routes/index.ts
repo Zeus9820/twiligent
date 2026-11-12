@@ -13,6 +13,7 @@ import settingsRoutes from './settingsRoutes.ts';
 import trackedContentRoutes from './trackedContentRoutes.ts';
 import { getHealth, getReadiness } from '../controllers/healthController.ts';
 import { handleInstagramCallback } from '../controllers/instagramAuthController.ts';
+import { handleYouTubeStudioCallback } from '../controllers/youtubeStudioController.ts';
 import { rateLimit, clientIp } from '../middleware/rateLimit.ts';
 import { RATE_LIMIT_RULES } from '../lib/rateLimit/rules.ts';
 import type { AppEnv } from '../types/app.ts';
@@ -23,6 +24,7 @@ export const publicRoutes = new Hono<AppEnv>();
 publicRoutes.get('/health', ...getHealth);
 publicRoutes.get('/health/ready', ...getReadiness);
 publicRoutes.get('/auth/instagram/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleInstagramCallback);
+publicRoutes.get('/auth/youtube/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleYouTubeStudioCallback);
 publicRoutes.route('/', authHookRoutes);
 publicRoutes.route('/', instagramWebhookRoutes);
 

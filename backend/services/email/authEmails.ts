@@ -21,45 +21,45 @@ interface CodeEmailCopy {
 
 const CODE_EMAILS: Record<string, CodeEmailCopy> = {
     signup: {
-        subject: 'Your Twiligent verification code',
-        lead: 'Enter this code on the Twiligent sign-in page to confirm your email and finish creating your account.',
+        subject: 'Your Kratos Studio verification code',
+        lead: 'Enter this code on the Kratos Studio sign-in page to confirm your email and finish creating your account.',
         linkLabel: 'Or confirm your email with this link',
     },
     recovery: {
-        subject: 'Reset your Twiligent password',
+        subject: 'Reset your Kratos Studio password',
         lead: 'Enter this code on the sign-in page, with the new password you want to use.',
         // the link signs the person in on Settings, where the Password section sets the new password
         linkLabel: 'Or sign in with this link and set a new password in Settings',
     },
     magiclink: {
-        subject: 'Your Twiligent sign-in code',
+        subject: 'Your Kratos Studio sign-in code',
         lead: 'Enter this code to sign in.',
         linkLabel: 'Or sign in with this link',
     },
     email: {
-        subject: 'Your Twiligent sign-in code',
+        subject: 'Your Kratos Studio sign-in code',
         lead: 'Enter this code to sign in.',
         linkLabel: 'Or sign in with this link',
     },
     invite: {
-        subject: 'You have been invited to Twiligent',
-        lead: 'You have been invited to create a Twiligent account. Enter this code to accept the invitation.',
+        subject: 'You have been invited to Kratos Studio',
+        lead: 'You have been invited to create a Kratos Studio account. Enter this code to accept the invitation.',
         linkLabel: 'Or accept the invitation with this link',
     },
     reauthentication: {
-        subject: 'Your Twiligent confirmation code',
+        subject: 'Your Kratos Studio confirmation code',
         lead: 'Enter this code to confirm it is you.',
     },
 };
 
 const NOTICES: Record<string, string> = {
-    password_changed_notification: 'The password for your Twiligent account was changed.',
-    email_changed_notification: 'The email address for your Twiligent account was changed.',
-    phone_changed_notification: 'The phone number for your Twiligent account was changed.',
-    identity_linked_notification: 'A new sign-in method was added to your Twiligent account.',
-    identity_unlinked_notification: 'A sign-in method was removed from your Twiligent account.',
-    mfa_factor_enrolled_notification: 'Two-step verification was turned on for your Twiligent account.',
-    mfa_factor_unenrolled_notification: 'A two-step verification method was removed from your Twiligent account.',
+    password_changed_notification: 'The password for your Kratos Studio account was changed.',
+    email_changed_notification: 'The email address for your Kratos Studio account was changed.',
+    phone_changed_notification: 'The phone number for your Kratos Studio account was changed.',
+    identity_linked_notification: 'A new sign-in method was added to your Kratos Studio account.',
+    identity_unlinked_notification: 'A sign-in method was removed from your Kratos Studio account.',
+    mfa_factor_enrolled_notification: 'Two-step verification was turned on for your Kratos Studio account.',
+    mfa_factor_unenrolled_notification: 'A two-step verification method was removed from your Kratos Studio account.',
 };
 
 const IGNORE_NOTE = 'If you did not ask for this, you can ignore this email.';
@@ -111,7 +111,7 @@ function codeEmail({ to, copy, code, link }: CodeEmailParts): AuthEmail {
 function noticeEmail(to: string, message: string): AuthEmail {
     return {
         to,
-        subject: 'A change to your Twiligent account',
+        subject: 'A change to your Kratos Studio account',
         text: [message, '', NOTICE_NOTE].join('\n'),
         html: layout([paragraph(message), paragraph(NOTICE_NOTE)]),
         notice: true,
@@ -124,8 +124,8 @@ function emailChangeEmails(hook: AuthEmailHook, supabaseUrl: string): AuthEmail[
     const toNew = (code: string, hash: string): AuthEmail => codeEmail({
         to: hook.newEmail ?? hook.email,
         copy: {
-            subject: 'Confirm your new Twiligent email address',
-            lead: 'Enter this code to confirm this address as the new email for your Twiligent account.',
+            subject: 'Confirm your new Kratos Studio email address',
+            lead: 'Enter this code to confirm this address as the new email for your Kratos Studio account.',
             linkLabel: 'Or confirm the new address with this link',
         },
         code,
@@ -137,8 +137,8 @@ function emailChangeEmails(hook: AuthEmailHook, supabaseUrl: string): AuthEmail[
             codeEmail({
                 to: hook.email,
                 copy: {
-                    subject: 'Confirm the change to your Twiligent email address',
-                    lead: `Enter this code to confirm moving your Twiligent account to ${hook.newEmail}.`,
+                    subject: 'Confirm the change to your Kratos Studio email address',
+                    lead: `Enter this code to confirm moving your Kratos Studio account to ${hook.newEmail}.`,
                     linkLabel: 'Or confirm the change with this link',
                 },
                 code: hook.token,

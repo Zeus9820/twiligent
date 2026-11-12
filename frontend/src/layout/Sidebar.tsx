@@ -48,7 +48,7 @@ export default function AppSidebar({ categories, onOpenPalette, onSignOut }: App
       <SidebarHeader className="gap-3 px-3 pt-4 pb-2">
         <Link
           to="/"
-          aria-label="Twiligent overview"
+          aria-label="Kratos Studio overview"
           className="flex h-8 items-center rounded-row px-1"
         >
           <Logo variant="mark" className="h-6" />

@@ -3,7 +3,9 @@ import { UpstreamError, UpstreamTimeoutError } from '../../lib/errors.ts';
 import type { InstagramContainerStatusCode, InstagramProfile } from '../../../shared/types/instagram.ts';
 
 const IG_GRAPH_URL = 'https://graph.instagram.com';
+const FB_GRAPH_URL = 'https://graph.facebook.com';
 const IG_API_VERSION = 'v25.0';
+const FB_API_VERSION = 'v26.0';
 const REQUEST_TIMEOUT_MS = 15000;
 const RETRY_DELAY_MS = 1000;
 const UNVERSIONED_PREFIXES = ['/oauth', '/access_token', '/refresh_access_token'];
@@ -50,6 +52,13 @@ interface InstagramApiProfile {
 }
 
 export function buildGraphUrl(endpoint: string, params: GraphParams = {}): URL {
+    const isFb = params.access_token?.startsWith('EA');
+    if (isFb) {
+        const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        const url = new URL(`${FB_GRAPH_URL}/${FB_API_VERSION}${path}`);
+        Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+        return url;
+    }
     const needsVersion = !UNVERSIONED_PREFIXES.some(prefix => endpoint.startsWith(prefix));
     const base = needsVersion ? `${IG_GRAPH_URL}/${IG_API_VERSION}` : IG_GRAPH_URL;
     const url = new URL(`${base}${endpoint}`);
@@ -123,6 +132,49 @@ async function graphPost<T>(endpoint: string, params: GraphParams, signal?: Abor
 }
 
 export async function fetchInstagramProfile(igUserId: string | null | undefined, accessToken: string, signal?: AbortSignal): Promise<InstagramProfile> {
+    const isFb = accessToken.startsWith('EA');
+
+    if (isFb) {
+        let resolvedId = igUserId;
+        if (!resolvedId) {
+            const assigned = await igFetch<{ data?: Array<{ id: string; username?: string }> }>(
+                '/me/assigned_instagram_accounts',
+                { access_token: accessToken, fields: 'id,username' }, 1, signal
+            );
+            const accounts = new Map((assigned.data ?? []).map(account => [account.id, account]));
+
+            if (accounts.size !== 1) {
+                throw new UpstreamError(accounts.size
+                    ? 'Meta returned multiple Instagram accounts. Share one account during login, then reconnect.'
+                    : 'Meta completed login but returned no Instagram accounts in /me/assigned_instagram_accounts. Reconnect after sharing the professional account with this app. If the account was selected and shared, contact Meta Developer Support because the access token contains no account assignment.');
+            }
+            resolvedId = accounts.keys().next().value!;
+        }
+
+        const profileData = await igFetch<InstagramApiProfile>(
+            `/${resolvedId}`,
+            {
+                access_token: accessToken,
+                fields: 'id,username,name,profile_picture_url,followers_count,follows_count,media_count,biography,website',
+            },
+            1,
+            signal
+        );
+
+        return {
+            igUserId: profileData.id || profileData.user_id || resolvedId,
+            name: profileData.name || profileData.username || '',
+            username: profileData.username || '',
+            profilePictureUrl: profileData.profile_picture_url || '',
+            followersCount: profileData.followers_count || 0,
+            followsCount: profileData.follows_count || 0,
+            mediaCount: profileData.media_count || 0,
+            biography: profileData.biography || '',
+            website: profileData.website || '',
+        };
+    }
+
+    // Standard Instagram User Token flow (and unit test mocks)
     const endpoint = igUserId ? `/${igUserId}` : '/me';
     const data = await igFetch<InstagramApiProfile>(endpoint, {
         access_token: accessToken,

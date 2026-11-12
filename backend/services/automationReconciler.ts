@@ -55,7 +55,7 @@ export function createAutomationReconciler({ comments, publicReplies, context }:
 
     async function lookFor(candidate: ReviewCandidate): Promise<ReviewResult> {
         if (!candidate.messageDigest || !candidate.accessToken) {
-            return { found: false, note: 'This reply was sent before Twiligent could recognise it in the conversation. Check it on Instagram before you retry.' };
+            return { found: false, note: 'This reply was sent before Kratos Studio could recognise it in the conversation. Check it on Instagram before you retry.' };
         }
         const messages = await listConversationMessages(candidate.igUserId, candidate.accessToken, candidate.fromId, signal);
         const match = await findSentReply(messages, { igUserId: candidate.igUserId, startedAt: candidate.startedAt, digest: candidate.messageDigest }, messageDigest);
@@ -81,7 +81,7 @@ export function createAutomationReconciler({ comments, publicReplies, context }:
                 reviewed.failed++;
                 const reason = redactSecrets((err as Error).message ?? 'unknown error').slice(0, 200);
                 log.warn('automation review check failed', { commentRowId: candidate.id, ...errorFields(err) });
-                await comments.recordReview(candidate.id, { found: false, note: `Twiligent could not read the conversation on Instagram (${reason}). Check it yourself before you retry.` })
+                await comments.recordReview(candidate.id, { found: false, note: `Kratos Studio could not read the conversation on Instagram (${reason}). Check it yourself before you retry.` })
                     .catch(recordErr => log.error('automation review not recorded', { commentRowId: candidate.id, ...errorFields(recordErr) }));
             }
         }
@@ -90,7 +90,7 @@ export function createAutomationReconciler({ comments, publicReplies, context }:
 
     async function lookForPublic(candidate: PublicReviewCandidate): Promise<PublicReviewResult> {
         if (!candidate.messageDigest || !candidate.accessToken) {
-            return { found: false, note: 'Twiligent cannot recognise this public reply on Instagram. Check the comment before you retry.', resend: false };
+            return { found: false, note: 'Kratos Studio cannot recognise this public reply on Instagram. Check the comment before you retry.', resend: false };
         }
         const { replies, complete } = await listCommentReplies(candidate.commentId, candidate.accessToken, signal);
         const match = await findSentReply(replies, { igUserId: candidate.igUserId, startedAt: candidate.startedAt, digest: candidate.messageDigest }, messageDigest);
@@ -119,7 +119,7 @@ export function createAutomationReconciler({ comments, publicReplies, context }:
                 reviewed.failed++;
                 const reason = redactSecrets((err as Error).message ?? 'unknown error').slice(0, 200);
                 log.warn('automation public review check failed', { publicReplyId: candidate.id, ...errorFields(err) });
-                await publicReplies.recordReview(candidate.id, { found: false, note: `Twiligent could not read the comment's replies on Instagram (${reason}). Check the comment yourself before you retry.`, resend: false })
+                await publicReplies.recordReview(candidate.id, { found: false, note: `Kratos Studio could not read the comment's replies on Instagram (${reason}). Check the comment yourself before you retry.`, resend: false })
                     .catch(recordErr => log.error('automation public review not recorded', { publicReplyId: candidate.id, ...errorFields(recordErr) }));
             }
         }

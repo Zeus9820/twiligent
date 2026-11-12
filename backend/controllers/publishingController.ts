@@ -1,6 +1,9 @@
 import { controller, pathParam, servicesFor } from './http.ts';
 import { jsonBody, queryParams } from '../middleware/validate.ts';
 import { parseContainerInput, parseContainerStatusQuery, parsePublishRequest } from '../validators/publishingValidators.ts';
+import { deletePublishedMedia } from '../lib/mediaStorage.ts';
+import { requestLogger } from '../middleware/requestContext.ts';
+import { errorFields } from '../lib/logger.ts';
 import type {
     InstagramContainerStatusResponse, InstagramMediaPublishResponse, InstagramPublishingLimitResponse, InstagramPublishResponse,
 } from '../../shared/types/instagram.ts';
@@ -22,6 +25,15 @@ export const getContainerStatus = controller.createHandlers(queryParams(parseCon
 });
 
 export const publishContainer = controller.createHandlers(jsonBody(parseContainerInput), async c => {
-    const mediaId = await servicesFor(c).publishing.publishContainer(c.get('userId'), pathParam(c, 'id'), c.req.valid('json').containerId);
+    const { containerId, mediaUrls } = c.req.valid('json');
+    const userId = c.get('userId');
+    const mediaId = await servicesFor(c).publishing.publishContainer(userId, pathParam(c, 'id'), containerId);
+    for (const mediaUrl of mediaUrls) {
+        try {
+            await deletePublishedMedia(c.env.MEDIA_BUCKET, c.env.MEDIA_PUBLIC_URL, mediaUrl, `${userId}/`);
+        } catch (err) {
+            requestLogger(c).warn('published media cleanup failed', { ...errorFields(err) });
+        }
+    }
     return c.json({ success: true, mediaId } satisfies InstagramMediaPublishResponse);
 });

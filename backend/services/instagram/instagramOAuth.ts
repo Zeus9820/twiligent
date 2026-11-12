@@ -45,6 +45,19 @@ async function instagramRequest(url: string, init: RequestInit, signal?: AbortSi
 // the hmac-signed state carries the userId and a timestamp, so no redis is needed
 export async function buildAuthorizationUrl(config: ConfiguredInstagramOAuth, userId: string): Promise<string> {
     const state = await createOAuthState(userId, config.appSecret);
+    if (config.configId) {
+        const params = new URLSearchParams({
+            client_id: config.appId,
+            config_id: config.configId,
+            display: 'popup',
+            override_default_response_type: 'true',
+            prompt: 'login',
+            redirect_uri: config.redirectUri,
+            response_type: 'code',
+            state,
+        });
+        return `https://www.facebook.com/dialog/oauth?${params}`;
+    }
     const params = new URLSearchParams({
         force_reauth: 'true',
         client_id: config.appId,
@@ -57,7 +70,9 @@ export async function buildAuthorizationUrl(config: ConfiguredInstagramOAuth, us
 }
 
 export async function exchangeCodeForToken(config: ConfiguredInstagramOAuth, code: string, signal?: AbortSignal): Promise<string> {
-    const tokenRes = await instagramRequest(TOKEN_URL, {
+    const cleanCode = code.replace(/#.*$/, '');
+    const tokenUrl = config.configId ? 'https://graph.facebook.com/v26.0/oauth/access_token' : TOKEN_URL;
+    const tokenRes = await instagramRequest(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -66,18 +81,21 @@ export async function exchangeCodeForToken(config: ConfiguredInstagramOAuth, cod
             grant_type: 'authorization_code',
             redirect_uri: config.redirectUri,
             // instagram sometimes appends #_ to the code
-            code: code.replace(/#.*$/, ''),
+            code: cleanCode,
         }),
     }, signal);
-    const tokenData = await tokenRes.json() as InstagramApiCodeToken;
+    const tokenData = await tokenRes.json() as InstagramApiCodeToken & { error?: { message?: string } };
     if (!tokenData.access_token) {
-        throw new UpstreamError(tokenData.error_message || JSON.stringify(tokenData));
+        throw new UpstreamError(tokenData.error?.message || tokenData.error_message || JSON.stringify(tokenData));
     }
     return tokenData.access_token;
 }
 
 // keeps the short-lived token (no expiry) when instagram declines the upgrade
 export async function upgradeToLongLivedToken(config: ConfiguredInstagramOAuth, shortToken: string, signal?: AbortSignal): Promise<IssuedInstagramToken> {
+    if (config.configId) {
+        return { token: shortToken, expiresIn: 0 };
+    }
     const longParams = new URLSearchParams({
         grant_type: 'ig_exchange_token',
         client_id: config.appId,

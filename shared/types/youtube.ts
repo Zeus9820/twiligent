@@ -259,3 +259,14 @@ export interface YouTubeLibraryResponse {
     total: number;
     channels: YouTubeLibraryChannel[];
 }
+export interface YouTubeStudioSummary {
+    startDate: string;
+    endDate: string;
+    views: number;
+    watchMinutes: number;
+    averageViewDurationSeconds: number;
+    subscribersGained: number;
+    subscribersLost: number;
+    topVideos: Array<{ videoId: string; title?: string; views: number; watchMinutes: number; averageViewDurationSeconds: number }>;
+}
+

@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { cleanCode, emailErrorNotice, isExistingAccount, passwordErrorMessage } from '../../src/lib/authErrors.ts';
 
 // the Worker's daily cap message, which the page replaces with its own
-const WORKER_LIMIT = 'Twiligent has sent all the verification emails it can today. Sign in with Google instead, or try again tomorrow.';
-const WITH_GOOGLE = 'Twiligent has sent all the codes it can email today. Continue with Google or use your password instead, or try again tomorrow.';
+const WORKER_LIMIT = 'Kratos Studio has sent all the verification emails it can today. Sign in with Google instead, or try again tomorrow.';
+const WITH_GOOGLE = 'Kratos Studio has sent all the codes it can email today. Continue with Google or use your password instead, or try again tomorrow.';
 
 test('the daily cap points to Google and the password when the Google button is on the page', () => {
   assert.deepEqual(emailErrorNotice({ message: WORKER_LIMIT, status: 429 }, true), { message: WITH_GOOGLE, emailLimitReached: true });
   assert.deepEqual(emailErrorNotice({ message: WORKER_LIMIT, status: 429 }, false), {
-    message: 'Twiligent has sent all the codes it can email today. Use your password instead, or try again tomorrow.',
+    message: 'Kratos Studio has sent all the codes it can email today. Use your password instead, or try again tomorrow.',
     emailLimitReached: true,
   });
 });

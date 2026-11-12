@@ -367,7 +367,7 @@ export function accountStatus(account: AutomationAccountState, now: number, need
   if (account.publicLimitedUntil && Date.parse(account.publicLimitedUntil) > now) {
     return { label: 'Public replies at their hourly limit', tone: 'warning', detail: 'This account posted its hourly number of public replies. The rest go out as the hour frees up.' };
   }
-  if (!account.subscribedAt) return { label: 'Not receiving comments', tone: 'warning', detail: 'Turn on comment events so Instagram sends this account\'s comments to Twiligent.' };
+  if (!account.subscribedAt) return { label: 'Not receiving comments', tone: 'warning', detail: 'Turn on comment events so Instagram sends this account\'s comments to Kratos Studio.' };
   if (needsMessages && !account.messagesSubscribed) {
     return {
       label: 'Follow checks off',

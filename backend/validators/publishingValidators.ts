@@ -8,10 +8,33 @@ const PUBLISH_MEDIA_TYPES: InstagramPublishMediaType[] = ['IMAGE', 'VIDEO', 'REE
 
 export interface ContainerInput {
     containerId: string;
+    mediaUrls: string[];
 }
 
 export interface ContainerStatusQuery {
     accountId: string;
+}
+
+export interface YouTubeShortUploadInput {
+    title: string;
+    description: string;
+    contentType: string;
+    size: number;
+    privacyStatus: 'private' | 'unlisted' | 'public';
+}
+
+export function parseYouTubeShortUploadInput(body: Fields): YouTubeShortUploadInput {
+    const privacyStatus = optionalString(body, 'privacyStatus') || 'private';
+    if (!['private', 'unlisted', 'public'].includes(privacyStatus)) throw new ValidationError('Choose a valid YouTube privacy setting.');
+    const size = optionalNumber(body, 'size');
+    if (size == null || !Number.isSafeInteger(size)) throw new ValidationError('YouTube upload size must be a whole number of bytes.');
+    return {
+        title: requiredString(body, 'title', 'A YouTube Shorts title is required.'),
+        description: optionalString(body, 'description') || '',
+        contentType: requiredString(body, 'contentType', 'A video content type is required.'),
+        size,
+        privacyStatus: privacyStatus as YouTubeShortUploadInput['privacyStatus'],
+    };
 }
 
 export function mediaType<T extends string>(fields: Fields, allowed: T[]): T | undefined {
@@ -61,7 +84,10 @@ export function parsePublishRequest(body: Fields): InstagramPublishRequest {
 }
 
 export function parseContainerInput(body: Fields): ContainerInput {
-    return { containerId: requiredString(body, 'containerId', 'containerId is required') };
+    return {
+        containerId: requiredString(body, 'containerId', 'containerId is required'),
+        mediaUrls: optionalArray(body, 'mediaUrls', isString, 'media URLs') ?? [],
+    };
 }
 
 export function parseContainerStatusQuery(query: Fields): ContainerStatusQuery {

@@ -11,9 +11,10 @@ export interface PublishResultProps {
   selectedAcct: AppAccount | undefined;
   scheduleMode: boolean;
   onReset: () => void;
+  youtubeVideoId?: string | null;
 }
 
-export default function PublishResult({ progress, selectedType, selectedAcct, scheduleMode, onReset }: PublishResultProps) {
+export default function PublishResult({ progress, selectedType, selectedAcct, scheduleMode, onReset, youtubeVideoId }: PublishResultProps) {
   const { publishStatus, statusMessage, publishedMediaId } = progress;
 
   if (publishStatus === 'done') {
@@ -21,8 +22,8 @@ export default function PublishResult({ progress, selectedType, selectedAcct, sc
       <>
         <span className="flex size-12 items-center justify-center rounded-full bg-success-soft text-success"><CheckCircle2 className="size-6" /></span>
         <h2 className="font-heading text-page-title font-semibold text-ink">Published</h2>
-        <p className="text-sm text-ink-muted">Your {selectedType?.label?.toLowerCase()} is live on Instagram.</p>
-        {publishedMediaId && <Badge variant="outline" className="font-mono">Media ID {publishedMediaId}</Badge>}
+        <p className="text-sm text-ink-muted">{selectedAcct && youtubeVideoId ? 'Published to Instagram Reels and YouTube Shorts.' : youtubeVideoId ? 'Uploaded to YouTube Shorts.' : 'Published to Instagram Reels.'}</p>
+        {publishedMediaId && <Badge variant="outline" className="font-mono">Instagram media ID {publishedMediaId}</Badge>}
         <div className="mt-2 flex gap-2">
           <Button onClick={onReset}><Plus data-icon="inline-start" />Publish another</Button>
           {selectedAcct?.username && (
@@ -30,6 +31,7 @@ export default function PublishResult({ progress, selectedType, selectedAcct, sc
               <ExternalLink data-icon="inline-start" />View profile
             </Button>
           )}
+          {youtubeVideoId && <Button variant="outline" render={<a href={`https://www.youtube.com/watch?v=${encodeURIComponent(youtubeVideoId)}`} target="_blank" rel="noopener noreferrer" />}><ExternalLink data-icon="inline-start" />View Short</Button>}
         </div>
       </>
     );

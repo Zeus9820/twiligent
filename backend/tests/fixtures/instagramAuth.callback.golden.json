@@ -283,6 +283,7 @@
                 "p_user_id": "user-1",
                 "p_patch": {
                     "accessToken": "SHORT_DUP",
+                    "instagramProvider": null,
                     "tokenExpiresAt": null,
                     "lastUpdated": "2026-09-01T12:00:00.000Z"
                 }

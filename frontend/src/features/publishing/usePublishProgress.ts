@@ -7,6 +7,7 @@ export function usePublishProgress() {
   const [publishStatus, setPublishStatus] = useState<PublishStatus>('');
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [publishedMediaId, setPublishedMediaId] = useState<string | null>(null);
+  const [publishedYouTubeId, setPublishedYouTubeId] = useState<string | null>(null);
 
   // try again goes back to the form but keeps the last upload percentage
   const retry = () => {
@@ -19,12 +20,13 @@ export function usePublishProgress() {
     setPublishStatus('');
     setStatusMessage('');
     setPublishedMediaId(null);
+    setPublishedYouTubeId(null);
     setUploadProgress(0);
   };
 
   return {
     activeStep, setActiveStep, uploadProgress, setUploadProgress, publishStatus, setPublishStatus,
-    statusMessage, setStatusMessage, publishedMediaId, setPublishedMediaId, retry, resetProgress,
+    statusMessage, setStatusMessage, publishedMediaId, setPublishedMediaId, publishedYouTubeId, setPublishedYouTubeId, retry, resetProgress,
   };
 }
 

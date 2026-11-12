@@ -14,7 +14,7 @@ export default function ScheduledPostDialogs({ removal }: ScheduledPostDialogsPr
         open={removal.confirmDeleteAll}
         onOpenChange={removal.setConfirmDeleteAll}
         title="Delete all scheduled posts?"
-        description="Every record is removed: pending, published and failed. Pending posts will not go out. Posts already on Instagram stay live; only Twiligent's records are deleted. Posts that are publishing right now are kept."
+        description="Every record is removed: pending, published and failed. Pending posts will not go out. Posts already on Instagram stay live; only Kratos Studio's records are deleted. Posts that are publishing right now are kept."
         confirmLabel="Delete all"
         onConfirm={removal.handleDeleteAll}
         busy={deleting}
@@ -26,8 +26,8 @@ export default function ScheduledPostDialogs({ removal }: ScheduledPostDialogsPr
         onOpenChange={open => { if (!open) removal.setPendingDelete(null); }}
         title={isPublished ? 'Remove this record?' : 'Delete this scheduled post?'}
         description={isPublished
-          ? 'The post stays live on Instagram. Only the record in Twiligent is removed.'
-          : 'It will not be published. The uploaded media stays in Cloudinary.'}
+          ? 'The post stays live on Instagram. Only the record in Kratos Studio is removed.'
+          : 'It will not be published. The uploaded media stays in Cloudflare R2.'}
         confirmLabel={isPublished ? 'Remove' : 'Delete'}
         onConfirm={removal.handleDeleteScheduled}
         busy={deleting}

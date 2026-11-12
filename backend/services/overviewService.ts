@@ -1,5 +1,6 @@
 import { fetchAllVideos } from './youtube/youtubeVideos.ts';
 import { fetchInstagramMedia } from './instagram/instagramMedia.ts';
+import { fetchWindsorMedia } from './instagram/windsorInstagram.ts';
 import { summarizeContentTypes } from './instagram/instagramContentTypes.ts';
 import { fetchRedditProfile, fetchRedditPosts } from './reddit/redditApi.ts';
 import { computeRedditAnalytics } from './reddit/redditAnalytics.ts';
@@ -54,6 +55,13 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
 
     function instagramWarmTask(userId: string, account: Account): WarmTask | null {
         const { igUserId, accessToken } = account;
+        if (account.instagramProvider === 'windsor' && igUserId && config.windsor?.ownerUserId === userId) {
+            const key = config.windsor.apiKey;
+            return async signal => {
+                const media = await fetchWindsorMedia(key, igUserId, signal);
+                await cache.setInstagramMedia(userId, account.id, { media, fetchedAt: new Date().toISOString() });
+            };
+        }
         if (!igUserId || !accessToken) return null;
         return async signal => {
             const media = await fetchInstagramMedia(igUserId, accessToken, 500, signal);

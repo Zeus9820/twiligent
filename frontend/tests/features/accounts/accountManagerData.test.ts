@@ -11,8 +11,8 @@ test('known Instagram errors have their own message', () => {
   assert.ok(instagramErrorMessage('access_denied').endsWith(TESTER_HINT));
 });
 
-test('unknown Instagram errors name the code and add the tester hint', () => {
-  assert.equal(instagramErrorMessage('weird'), `Instagram connection failed: weird. ${TESTER_HINT}`);
+test('unknown Instagram errors include the returned message', () => {
+  assert.equal(instagramErrorMessage('weird'), 'Instagram connection failed: weird');
 });
 
 test('a return without OAuth or add parameters does nothing', () => {

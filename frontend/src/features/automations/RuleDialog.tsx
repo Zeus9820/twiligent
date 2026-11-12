@@ -66,7 +66,7 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{rule.ruleId ? 'Edit rule' : 'New rule'}</DialogTitle>
-          <DialogDescription>When a comment matches, Twiligent answers its author in a private message, publicly under the comment, or both.</DialogDescription>
+          <DialogDescription>When a comment matches, Kratos Studio answers its author in a private message, publicly under the comment, or both.</DialogDescription>
         </DialogHeader>
         <form id="automation-rule-form" onSubmit={rule.handleSubmit} className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
           <div className="flex flex-col gap-5">
@@ -135,13 +135,13 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
                   <Switch id="rule-follow" checked={form.requireFollow} onCheckedChange={checked => setField('requireFollow', checked)} />
                 </label>
                 <p className="text-small text-ink-muted">
-                  Instagram tells Twiligent whether someone follows you only after they message you. With this on, the first reply asks them
-                  to follow and reply. When they reply, Twiligent asks Instagram, then sends the reply and link to followers and a reminder to
+                  Instagram tells Kratos Studio whether someone follows you only after they message you. With this on, the first reply asks them
+                  to follow and reply. When they reply, Kratos Studio asks Instagram, then sends the reply and link to followers and a reminder to
                   everyone else, twice at most. If Instagram cannot say, nothing is sent.
                 </p>
                 <p className="text-small text-warning">
                   This option is still being tested and may or may not work. It needs Instagram to send your account&apos;s messages to
-                  Twiligent, which Meta may not allow without extra app approval. Use a keyword rule when the link must arrive.
+                  Kratos Studio, which Meta may not allow without extra app approval. Use a keyword rule when the link must arrive.
                 </p>
                 {form.requireFollow && (
                   <>

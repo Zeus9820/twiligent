@@ -143,6 +143,7 @@ export interface InstagramAnalytics extends InstagramTiming {
     contentTypeStats: InstagramContentTypeStatsMap;
     postFrequency: PostFrequency;
     topPosts: InstagramTopPost[];
+    topReelsByViews?: InstagramTopPost[];
     hashtagAnalysis: InstagramHashtagStats[];
     captionLengthCorrelation: InstagramCaptionLengthStats[];
     postsLast7Days: number;

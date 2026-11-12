@@ -43,7 +43,7 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
   return (
     <SurfaceBox
       title="Backup scheduler on GitHub"
-      subheader="Optional, for administrators running their own Twiligent. About 5 minutes."
+      subheader="Optional, for administrators running their own Kratos Studio. About 5 minutes."
       secondary={(
         <Button variant="ghost" size="sm" onClick={() => setOpen(isOpen => !isOpen)} aria-expanded={open} aria-controls="gh-guide-steps">
           {open ? 'Hide steps' : 'Show steps'}
@@ -53,7 +53,7 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
     >
       <div className="flex flex-col gap-5">
         <p className="text-sm text-ink-muted">
-          A second copy of the publisher that runs on GitHub for free, so posts still go out if the server is ever paused, though later: GitHub often starts these runs hours after their time. Step 2 needs the secret key of the Supabase project behind this Twiligent, which only its administrator has. If you only sign in here, skip this: the server already publishes your posts.
+          A second copy of the publisher that runs on GitHub for free, so posts still go out if the server is ever paused, though later: GitHub often starts these runs hours after their time. Step 2 needs the secret key of the Supabase project behind this Kratos Studio, which only its administrator has. If you only sign in here, skip this: the server already publishes your posts.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" render={<a href={docsUrl('/self-host/github')} target="_blank" rel="noopener noreferrer" />}>

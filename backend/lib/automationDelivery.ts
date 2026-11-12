@@ -173,7 +173,7 @@ const LIMIT_MESSAGES: Record<Exclude<ReserveOutcome, 'ok' | 'gone' | 'paused' | 
     rule_limit: 'Waiting: this rule reached its hourly reply limit.',
     account_limit: 'Waiting: this account reached its hourly reply limit.',
     user_limit: 'Waiting: your accounts reached their combined hourly reply limit.',
-    global_limit: 'Waiting: this Twiligent instance reached its hourly reply limit.',
+    global_limit: 'Waiting: this Kratos Studio instance reached its hourly reply limit.',
 };
 
 const EXPIRED_MESSAGE = 'The 7 days in which Instagram allows a private reply to this comment ran out.';

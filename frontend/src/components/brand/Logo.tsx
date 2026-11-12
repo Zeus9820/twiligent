@@ -12,18 +12,15 @@ export interface LogoProps {
 export function Logo({ variant = 'lockup', className }: LogoProps) {
   if (variant === 'wordmark') {
     return (
-      <span className={cn('inline-flex shrink-0 select-none', className)}>
-        <img src={`${LOGO_DIR}/twiligent-wordmark-dusk.svg`} alt="Twiligent" className="h-full w-auto dark:hidden" draggable={false} />
-        <img src={`${LOGO_DIR}/twiligent-wordmark-white.svg`} alt="" className="hidden h-full w-auto dark:block" draggable={false} />
-      </span>
+      <span className={cn('inline-flex shrink-0 select-none items-center whitespace-nowrap font-display text-sm font-bold tracking-tight text-ink', className)}>Kratos Studio</span>
     );
   }
 
   if (variant === 'mark') {
     return (
       <img
-        src={`${LOGO_DIR}/twiligent-mark-color.svg`}
-        alt="Twiligent"
+        src={`${LOGO_DIR}/game-of-kratos-emblem.svg`}
+        alt="Kratos Studio"
         className={cn('h-6 w-auto shrink-0 select-none', className)}
         draggable={false}
       />
@@ -31,19 +28,9 @@ export function Logo({ variant = 'lockup', className }: LogoProps) {
   }
 
   return (
-    <span className={cn('inline-flex shrink-0 select-none', className)}>
-      <img
-        src={`${LOGO_DIR}/twiligent-lockup-horizontal.svg`}
-        alt="Twiligent"
-        className="h-full w-auto dark:hidden"
-        draggable={false}
-      />
-      <img
-        src={`${LOGO_DIR}/twiligent-lockup-horizontal-reversed.svg`}
-        alt="Twiligent"
-        className="hidden h-full w-auto dark:block"
-        draggable={false}
-      />
+    <span className={cn('inline-flex shrink-0 select-none items-center gap-2', className)}>
+      <img src={`${LOGO_DIR}/game-of-kratos-emblem.svg`} alt="" className="h-full w-auto" draggable={false} />
+      <span className="whitespace-nowrap font-display text-lg font-bold tracking-tight text-ink">Kratos Studio</span>
     </span>
   );
 }

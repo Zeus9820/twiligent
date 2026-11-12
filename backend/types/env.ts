@@ -4,8 +4,14 @@ export interface Env {
     SUPABASE_SERVICE_KEY: string;
     SUPABASE_ANON_KEY: string;
     YOUTUBE_API_KEY?: string;
+    GOOGLE_YOUTUBE_CLIENT_ID?: string;
+    GOOGLE_YOUTUBE_CLIENT_SECRET?: string;
+    GOOGLE_YOUTUBE_TOKEN_KEY?: string;
     INSTAGRAM_APP_ID?: string;
     INSTAGRAM_APP_SECRET?: string;
+    INSTAGRAM_CONFIG_ID?: string;
+    WINDSOR_API_KEY?: string;
+    WINDSOR_OWNER_USER_ID?: string;
     MEDIA_BUCKET?: R2Bucket;
     MEDIA_PUBLIC_URL?: string;
     BACKEND_URL?: string;

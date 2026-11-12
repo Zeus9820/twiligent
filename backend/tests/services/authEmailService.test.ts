@@ -13,7 +13,7 @@ import type { Env } from '../../types/env.ts';
 const EMAIL_ENV: Partial<Env> = {
     SUPABASE_URL: 'https://project.supabase.co',
     RESEND_API_KEY: 're_test',
-    EMAIL_FROM: 'Twiligent <no-reply@example.com>',
+    EMAIL_FROM: 'Kratos Studio <no-reply@example.com>',
 };
 
 let fetchMock: FetchMock | null = null;
@@ -55,7 +55,7 @@ test('a code email is counted against the UTC day, then sent through Resend with
     assert.equal(request.url, 'https://api.resend.com/emails');
     assert.deepEqual(request.headers, { 'Authorization': 'Bearer re_test', 'Content-Type': 'application/json', 'Idempotency-Key': 'msg_1-0' });
     const body = JSON.parse(request.body ?? '{}') as Record<string, unknown>;
-    assert.deepEqual([body.from, body.to, body.subject], ['Twiligent <no-reply@example.com>', ['new@example.com'], 'Your Twiligent verification code']);
+    assert.deepEqual([body.from, body.to, body.subject], ['Kratos Studio <no-reply@example.com>', ['new@example.com'], 'Your Kratos Studio verification code']);
     assert.deepEqual(logLines.map(line => line.message), ['auth email sent']);
 });
 

@@ -11,11 +11,12 @@ interface SinglePostTabProps {
   form: SinglePostForm;
   publish: SinglePublish;
   igAccounts: AppAccount[];
+  youtubeAccounts: AppAccount[];
   onReset: () => void;
 }
 
-export default function SinglePostTab({ form, publish, igAccounts, onReset }: SinglePostTabProps) {
-  const selectedAcct = igAccounts.find(account => account.id === form.selectedAccount);
+export default function SinglePostTab({ form, publish, igAccounts, youtubeAccounts, onReset }: SinglePostTabProps) {
+  const selectedAcct = form.publishInstagram ? igAccounts.find(account => account.id === form.selectedAccount) : undefined;
   const selectedType = contentTypeOf(form.contentType);
 
   if (publish.activeStep === 2) {
@@ -40,6 +41,7 @@ export default function SinglePostTab({ form, publish, igAccounts, onReset }: Si
         form={form}
         publish={publish}
         igAccounts={igAccounts}
+        youtubeAccounts={youtubeAccounts}
         selectedAcct={selectedAcct}
         selectedType={selectedType}
       />

@@ -20,6 +20,7 @@ import type {
 } from '@shared/types/automation.ts';
 import type {
     ResolveChannelResponse, YouTubeAnalyticsPayload, YouTubeComparisonResponse, YouTubeVideosResponse,
+    YouTubeStudioSummary,
 } from '@shared/types/youtube.ts';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
@@ -57,6 +58,13 @@ export type MediaStorageConfig = MediaStorageConfigResponse;
 
 export interface UploadOptions {
     onProgress?: (percent: number) => void;
+    resumeKey?: string;
+}
+
+export interface YouTubeShortUploadOptions extends UploadOptions {
+    title: string;
+    description: string;
+    privacyStatus: 'private' | 'unlisted' | 'public';
 }
 
 const UPLOAD_ERROR_MESSAGES: Record<UploadErrorReason, string> = {
@@ -121,10 +129,10 @@ async function putMediaPart(uploadId: string, key: string, partNumber: number, c
     throw lastError || new Error('Media part upload failed.');
 }
 
-async function uploadMedia(file: File, _config: MediaStorageConfig, { onProgress }: UploadOptions = {}): Promise<string> {
+async function uploadMedia(file: File, _config: MediaStorageConfig, { onProgress, resumeKey }: UploadOptions = {}): Promise<string> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Sign in again before uploading media.');
-    const stateKey = `twiligent-r2-upload:${session.user.id}:${file.name}:${file.size}:${file.lastModified}:${file.type}`;
+    const stateKey = `twiligent-r2-upload:${session.user.id}:${resumeKey || 'file'}:${file.name}:${file.size}:${file.lastModified}:${file.type}`;
     let state: MultipartState | null = null;
     try { state = JSON.parse(localStorage.getItem(stateKey) || 'null') as MultipartState | null; }
     catch { localStorage.removeItem(stateKey); }
@@ -167,6 +175,86 @@ async function uploadMedia(file: File, _config: MediaStorageConfig, { onProgress
     return state.publicUrl;
 }
 
+interface YouTubeUploadResponse { id?: string; error?: { message?: string } }
+const YOUTUBE_CHUNK_SIZE = 8 * 1024 * 1024;
+
+function confirmedYouTubeBytes(range: string | null): number {
+    const match = range?.match(/bytes=0-(\d+)/);
+    return match ? Number(match[1]) + 1 : 0;
+}
+
+function youtubeXhr(uploadUrl: string, accessToken: string, chunk: Blob | null, range: string, onProgress: (loaded: number) => void): Promise<{ status: number; confirmedBytes: number; videoId?: string; message?: string }> {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+        xhr.setRequestHeader('Content-Range', range);
+        if (chunk) xhr.setRequestHeader('Content-Type', chunk.type || 'application/octet-stream');
+        xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress(event.loaded); };
+        xhr.onerror = () => reject(new Error('YouTube upload connection interrupted.'));
+        xhr.onload = () => {
+            const status = xhr.status;
+            if (status === 308) {
+                resolve({ status, confirmedBytes: confirmedYouTubeBytes(xhr.getResponseHeader('Range')) });
+                return;
+            }
+            let body: YouTubeUploadResponse = {};
+            try { body = JSON.parse(xhr.responseText) as YouTubeUploadResponse; } catch { /* report status */ }
+            if (status >= 200 && status < 300 && body.id) resolve({ status, confirmedBytes: -1, videoId: body.id });
+            else reject(new Error(body.error?.message || `YouTube upload failed (HTTP ${status}).`));
+        };
+        xhr.send(chunk);
+    });
+}
+
+async function uploadYouTubeShort(accountId: string, file: File, { title, description, privacyStatus, onProgress, resumeKey }: YouTubeShortUploadOptions): Promise<string> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Sign in again before uploading to YouTube.');
+    const stateKey = `youtube-short-upload:${session.user.id}:${accountId}:${resumeKey || 'file'}:${file.name}:${file.size}:${file.lastModified}:${title}:${description}:${privacyStatus}`;
+    let uploadUrl: string | null = null;
+    let accessToken: string | null = null;
+    try {
+        const saved = JSON.parse(sessionStorage.getItem(stateKey) || 'null') as { uploadUrl?: string; accessToken?: string } | null;
+        uploadUrl = saved?.uploadUrl || null;
+        accessToken = saved?.accessToken || null;
+    } catch { sessionStorage.removeItem(stateKey); }
+    if (!uploadUrl) {
+        const started = await request<{ success: true; uploadUrl: string; accessToken: string }>(`/accounts/${encodeURIComponent(accountId)}/youtube-studio/short-uploads`, {
+            method: 'POST', body: JSON.stringify({ title, description, contentType: file.type, size: file.size, privacyStatus }),
+        });
+        uploadUrl = started.uploadUrl;
+        accessToken = started.accessToken;
+        sessionStorage.setItem(stateKey, JSON.stringify({ uploadUrl, accessToken }));
+    }
+
+    let offset = 0;
+    let result: string | undefined;
+    for (let attempt = 0; attempt < 5 && !result; attempt++) {
+        try {
+            if (attempt > 0) {
+                const status = await youtubeXhr(uploadUrl, accessToken as string, null, `bytes */${file.size}`, () => undefined);
+                if (status.videoId) { result = status.videoId; break; }
+                offset = status.confirmedBytes;
+            }
+            while (offset < file.size) {
+                const end = Math.min(offset + YOUTUBE_CHUNK_SIZE, file.size);
+                const chunk = file.slice(offset, end, file.type);
+                const response = await youtubeXhr(uploadUrl, accessToken as string, chunk, `bytes ${offset}-${end - 1}/${file.size}`, loaded => onProgress?.(Math.round((offset + loaded) / file.size * 100)));
+                if (response.videoId) { result = response.videoId; break; }
+                offset = response.confirmedBytes || end;
+                onProgress?.(Math.round(offset / file.size * 100));
+            }
+        } catch (error) {
+            if (attempt === 4) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+    }
+    if (!result) throw new Error('YouTube did not confirm the Short upload. Retry to resume it.');
+    sessionStorage.removeItem(stateKey);
+    onProgress?.(100);
+    return result;
+}
+
 // tracked-content screenshots use the same multipart storage path
 async function uploadImage(file: File, config: MediaStorageConfig): Promise<string> {
     return uploadMedia(file, config);
@@ -197,6 +285,9 @@ export const api = {
 
     // Analytics (YouTube)
     getAnalytics: (id: string) => request<YouTubeAnalyticsPayload>(`/accounts/${id}/analytics`),
+    getYouTubeStudioUrl: (id: string) => request<{ url: string }>(`/accounts/${id}/youtube-studio/connect`),
+    getYouTubeStudio: (id: string) => request<{ success: true; data: YouTubeStudioSummary }>(`/accounts/${id}/youtube-studio`),
+    uploadYouTubeShort,
     getVideos: (id: string) => request<YouTubeVideosResponse>(`/accounts/${id}/videos`),
 
     getComparison: () => request<YouTubeComparisonResponse>('/comparison'),
@@ -209,7 +300,7 @@ export const api = {
     getIGPublishingLimit: (id: string) => request<InstagramPublishingLimitResponse>(`/accounts/${id}/ig-publishing-limit`),
     createIGContainer: (id: string, data: InstagramPublishRequest) => request<InstagramPublishResponse>(`/accounts/${id}/ig-publish`, { method: 'POST', body: JSON.stringify(data) }),
     getIGContainerStatus: (containerId: string, accountId: string) => request<InstagramContainerStatusResponse>(`/ig-container/${containerId}/status?accountId=${accountId}`),
-    publishIGContainer: (id: string, containerId: string) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
+    publishIGContainer: (id: string, containerId: string, mediaUrls: string[] = []) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId, mediaUrls }) }),
 
     addRedditAccount: (username: string, cookie: string) => request<AccountResponse>('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
     getRedditAnalytics: (id: string) => request<RedditCacheData>(`/accounts/${id}/reddit-analytics`),

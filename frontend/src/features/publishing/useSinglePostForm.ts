@@ -19,6 +19,11 @@ const INITIAL_FIELDS: SinglePostFields = {
 export function useSinglePostForm() {
   const media = useSinglePostMedia();
   const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [publishInstagram, setPublishInstagram] = useState(true);
+  const [youtubeAccount, setYoutubeAccount] = useState('');
+  const [youtubeTitle, setYoutubeTitle] = useState('');
+  const [youtubeDescription, setYoutubeDescription] = useState('');
+  const [youtubePrivacy, setYoutubePrivacy] = useState<'private' | 'unlisted' | 'public'>('private');
   const [contentType, setContentType] = useState<ContentTypeValue | ''>('');
   const [fields, setFields] = useState<SinglePostFields>(INITIAL_FIELDS);
 
@@ -38,10 +43,12 @@ export function useSinglePostForm() {
   };
 
   const scheduleIncomplete = fields.scheduleMode && (!fields.scheduleDate || !fields.scheduleTime);
-  const canPublish = Boolean(media.file) && Boolean(contentType) && Boolean(selectedAccount) && !scheduleIncomplete;
+  const canPublish = Boolean(media.file) && Boolean(contentType) && ((publishInstagram && Boolean(selectedAccount)) || Boolean(youtubeAccount)) && !scheduleIncomplete;
 
   return {
-    ...media, selectedAccount, setSelectedAccount, contentType, changeContentType,
+    ...media, selectedAccount, setSelectedAccount, publishInstagram, setPublishInstagram,
+    youtubeAccount, setYoutubeAccount, youtubeTitle, setYoutubeTitle, youtubeDescription, setYoutubeDescription, youtubePrivacy, setYoutubePrivacy,
+    contentType, changeContentType,
     fields, setField, resetForm, canPublish,
   };
 }

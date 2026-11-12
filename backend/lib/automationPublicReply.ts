@@ -74,7 +74,7 @@ const PUBLIC_LIMIT_MESSAGES: Partial<Record<ReserveOutcome, string>> = {
     account_limit: 'Waiting: this account reached its hourly limit for public replies.',
 };
 
-const PUBLIC_EXPIRED_MESSAGE = 'This public reply waited 7 days without going out, so Twiligent stopped trying.';
+const PUBLIC_EXPIRED_MESSAGE = 'This public reply waited 7 days without going out, so Kratos Studio stopped trying.';
 
 // what is wrong with one public reply text, or null when Instagram should take it
 export function publicReplyTextProblem(text: string): string | null {
@@ -120,7 +120,7 @@ export function publicFinishPlan(result: SendResult, job: PublicReplyJob, now: n
             status: 'needs_review',
             outcome: 'ambiguous',
             reason: 'no_answer',
-            errorMessage: `Instagram did not answer (${result.message}), so the public reply may or may not be there. Twiligent checks the comment's replies and sends it again only if it is not there.`,
+            errorMessage: `Instagram did not answer (${result.message}), so the public reply may or may not be there. Kratos Studio checks the comment's replies and sends it again only if it is not there.`,
         };
     }
 
@@ -195,7 +195,7 @@ export function shouldResend({ complete, checks, lostAnswers }: { complete: bool
 
 // what the person sees on a public reply that was looked for and not found, after this many checks
 export function publicReviewNote({ complete, checks }: { complete: boolean; checks: number }): string {
-    if (!complete) return 'Twiligent could not read every reply on this comment, so it does not send the public reply again. Check the comment on Instagram before you retry.';
-    if (checks < PUBLIC_REVIEW_MAX_CHECKS) return 'Twiligent checked the comment\'s replies and did not find this public reply. It looks again in a few minutes.';
-    return 'Twiligent checked the comment\'s replies several times and did not find this public reply. Check the comment on Instagram before you retry.';
+    if (!complete) return 'Kratos Studio could not read every reply on this comment, so it does not send the public reply again. Check the comment on Instagram before you retry.';
+    if (checks < PUBLIC_REVIEW_MAX_CHECKS) return 'Kratos Studio checked the comment\'s replies and did not find this public reply. It looks again in a few minutes.';
+    return 'Kratos Studio checked the comment\'s replies several times and did not find this public reply. Check the comment on Instagram before you retry.';
 }

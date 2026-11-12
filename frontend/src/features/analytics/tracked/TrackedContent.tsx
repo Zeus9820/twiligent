@@ -24,7 +24,7 @@ import type { TrackedContentItem } from '@shared/types/domain.ts';
 
 function deleteDescription(item: TrackedContentItem | null): string {
   if (!item) return '';
-  return `"${item.title || item.label || item.url}" and its saved views, image and category are removed from Twiligent. The original post or video is not affected.`;
+  return `"${item.title || item.label || item.url}" and its saved views, image and category are removed from Kratos Studio. The original post or video is not affected.`;
 }
 
 export default function TrackedContent() {

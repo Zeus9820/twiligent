@@ -29,7 +29,7 @@ test('the same text sent well before the attempt, or a different text, is not ta
     assert.equal((await findSentReply(close, { igUserId: '1784', startedAt: STARTED, digest }, messageDigest))?.id, 'close');
 });
 
-test('the note says when Twiligent will look again and that Instagram refuses a second reply', () => {
+test('the note says when Kratos Studio will look again and that Instagram refuses a second reply', () => {
     assert.match(reviewNote(1), /looks again later/);
     assert.doesNotMatch(reviewNote(REVIEW_MAX_CHECKS), /looks again later/);
     assert.match(reviewNote(REVIEW_MAX_CHECKS), /refuses a second private reply/);

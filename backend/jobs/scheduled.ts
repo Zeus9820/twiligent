@@ -71,7 +71,7 @@ export async function runScheduledJob(cron: string, env: Env, scheduledTime = Da
         return;
     }
     const clients = { supabase: getSupabase(env), redis: getRedis(env), rateLimitRedis: getRateLimitRedis(env) };
-    const services = createServices(clients, readConfig(env), context);
+    const services = createServices(clients, readConfig(env), context, env);
     const started = Date.now();
 
     const plan = cronPlan(cron, scheduledTime);

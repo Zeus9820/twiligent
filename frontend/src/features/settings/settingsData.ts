@@ -32,8 +32,8 @@ export interface HealthCheckResult {
 }
 
 export const DOC_LINKS: DocLink[] = [
-  { label: 'Using Twiligent', href: docsUrl('/use/getting-started') },
-  { label: 'Run your own Twiligent', href: docsUrl('/self-host') },
+  { label: 'Using Kratos Studio', href: docsUrl('/use/getting-started') },
+  { label: 'Run your own Kratos Studio', href: docsUrl('/self-host') },
   { label: 'Environment variables', href: docsUrl('/reference/environment') },
 ];
 

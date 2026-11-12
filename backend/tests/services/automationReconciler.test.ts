@@ -99,7 +99,7 @@ describe('automation reconciler', () => {
         const run = await reconciler(queue).run();
         assert.deepEqual(run.reviewed, { found: 0, notFound: 1, failed: 0 });
         assert.equal(queue.rows[0].status, 'needs_review');
-        assert.match(queue.rows[0].errorMessage!, /did not find this reply\. Twiligent looks again later/);
+        assert.match(queue.rows[0].errorMessage!, /did not find this reply\. Kratos Studio looks again later/);
     });
 
     test('a conversation Instagram will not show is recorded as a check that could not be made', async () => {
@@ -118,7 +118,7 @@ describe('automation reconciler', () => {
         queue.attempts[0].digest = null;
         await reconciler(queue).run();
         assert.equal(requests.length, 0);
-        assert.match(queue.rows[0].errorMessage!, /before Twiligent could recognise it/);
+        assert.match(queue.rows[0].errorMessage!, /before Kratos Studio could recognise it/);
     });
 
     test('overdue replies and follow-ups are expired in one call, and a queue that fell behind logs one warning', async () => {

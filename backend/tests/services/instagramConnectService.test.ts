@@ -44,3 +44,31 @@ test('a connect that loses a race to a second connect of the same account renews
     assert.deepEqual(updates.map(([id, values]) => [id, values.accessToken]), [['ig-1', 'LONG']]);
     assert.deepEqual(events.map(event => event.action), ['account.reconnected']);
 });
+
+test('Windsor connection is restricted to the configured owner and stores no Windsor API key', async t => {
+    const fetch = mock.method(globalThis, 'fetch', async (_input: string | URL, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body)) as { params: { name: string } };
+        const result = body.params.name === 'get_connectors'
+            ? [{ id: 'instagram', accounts: [{ id: 'ig-1' }] }]
+            : { status: 'done', data: [{ user_name: 'creator', followers_count: 10 }] };
+        return Response.json({ result: { structuredContent: { result } } });
+    });
+    t.after(() => fetch.mock.restore());
+    let stored: Account | undefined;
+    const accounts = {
+        listForUser: async () => [],
+        create: async (account: Account) => { stored = account; },
+    } as unknown as AccountRepository;
+    const audit = { recordForUser: async () => {} } as unknown as AuditRepository;
+    const config = readConfig({ ...ENV, WINDSOR_API_KEY: 'secret-key', WINDSOR_OWNER_USER_ID: 'owner' });
+    const service = createInstagramConnectService({ accounts, audit, config, context: { requestId: 'test', signal: new AbortController().signal, log: createLogger() } });
+    const url = new URL(await service.authorizationUrl('owner'));
+    assert.equal(url.hostname, 'www.instagram.com');
+    assert.equal(await service.userIdFromState(url.searchParams.get('state') || ''), 'owner');
+    await assert.rejects(service.connect('other', 'windsor'), /not configured/);
+    assert.equal(await service.connect('owner', 'windsor'), 'connected');
+    assert.equal(stored?.igUserId, 'ig-1');
+    assert.equal(stored?.instagramProvider, 'windsor');
+    assert.equal(stored?.accessToken, '');
+    assert.equal(JSON.stringify(stored).includes('secret-key'), false);
+});

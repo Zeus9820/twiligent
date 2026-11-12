@@ -33,7 +33,7 @@ export default function AddAccountFooter({ flow }: AddAccountFooterProps) {
       {platform === 'instagram' && (
         <Button onClick={instagram.handleConnectInstagram} disabled={connecting}>
           {connecting ? <Spinner className="size-4" /> : <ExternalLink data-icon="inline-start" />}
-          {connecting ? 'Opening Instagram' : 'Continue to Instagram'}
+          {connecting ? 'Connecting' : 'Connect Instagram'}
         </Button>
       )}
       {platform === 'reddit' && (

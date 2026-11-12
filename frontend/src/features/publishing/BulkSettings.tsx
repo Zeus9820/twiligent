@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import DetailPanel, { FieldRow } from '@/components/DetailPanel';
-import AccountSelect from '@/components/AccountSelect';
+import PublishDestinations from './PublishDestinations';
 import BulkScheduleFields from './BulkScheduleFields';
 import IconInput from './IconInput';
 import TypePicker from './TypePicker';
@@ -24,6 +24,7 @@ interface BulkFooterProps {
 interface BulkSettingsProps {
   bulk: BulkSettingsState;
   igAccounts: AppAccount[];
+  youtubeAccounts: AppAccount[];
   pending: number;
   processing: boolean;
   onStart: () => void;
@@ -35,7 +36,7 @@ function BulkFooter({ settings, pending, processing, onStart, onStop }: BulkFoot
   if (processing) {
     return (
       <Button variant="destructive" size="lg" className="w-full" onClick={onStop}>
-        <Square data-icon="inline-start" />Stop after this file
+        <Square data-icon="inline-start" />Stop after active work
       </Button>
     );
   }
@@ -47,14 +48,20 @@ function BulkFooter({ settings, pending, processing, onStart, onStop }: BulkFoot
   );
 }
 
-export default function BulkSettings({ bulk, igAccounts, pending, processing, onStart, onStop, onApplyCaption }: BulkSettingsProps) {
+export default function BulkSettings({ bulk, igAccounts, youtubeAccounts, pending, processing, onStart, onStop, onApplyCaption }: BulkSettingsProps) {
   const { settings, setSetting } = bulk;
   const footer = <BulkFooter settings={settings} pending={pending} processing={processing} onStart={onStart} onStop={onStop} />;
   return (
     <DetailPanel title="Bulk settings" footer={footer}>
-      <FieldRow label="Account">
-        <AccountSelect accounts={igAccounts} value={settings.account} onChange={value => setSetting('account', value)} disabled={processing} />
-      </FieldRow>
+      <PublishDestinations
+        instagramAccounts={igAccounts} youtubeAccounts={youtubeAccounts}
+        instagramEnabled={settings.publishInstagram ?? true} onInstagramEnabled={value => setSetting('publishInstagram', value)}
+        instagramAccount={settings.account} onInstagramAccount={value => setSetting('account', value)}
+        youtubeAccount={settings.youtubeAccount || ''} onYoutubeAccount={value => setSetting('youtubeAccount', value)}
+        title="" onTitle={() => undefined} description="" onDescription={() => undefined}
+        privacy={settings.youtubePrivacy || 'private'} onPrivacy={value => setSetting('youtubePrivacy', value)}
+        disabled={processing} showYouTubeMetadata={false}
+      />
       <FieldRow label="Content type">
         <TypePicker value={settings.contentType} onChange={value => setSetting('contentType', value)} disabled={processing} />
       </FieldRow>

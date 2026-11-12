@@ -30,7 +30,7 @@ export default function PublishProgress({ progress, ...resultProps }: PublishRes
             {publishStatus === 'processing' && <p className="text-caption text-ink-faint">Videos can take a minute.</p>}
           </>
         )}
-        <PublishResult progress={progress} {...resultProps} />
+        <PublishResult progress={progress} youtubeVideoId={progress.publishedYouTubeId} {...resultProps} />
       </div>
     </SurfaceBox>
   );

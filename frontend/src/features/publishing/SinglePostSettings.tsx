@@ -2,11 +2,11 @@ import { AtSign, Calendar, Image as ImageIcon, MapPin, Send, UserPlus } from 'lu
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import DetailPanel, { FieldRow } from '@/components/DetailPanel';
-import AccountSelect from '@/components/AccountSelect';
 import IconInput from './IconInput';
 import PostSummary from './PostSummary';
 import ReelOptions from './ReelOptions';
 import ScheduleFields from './ScheduleFields';
+import PublishDestinations from './PublishDestinations';
 import type { AppAccount } from '../../utils/formatters';
 import type { ContentTypeOption } from './publishConstants';
 import type { SinglePostForm } from './useSinglePostForm';
@@ -21,6 +21,7 @@ interface SinglePostSettingsProps {
   form: SinglePostForm;
   publish: SinglePublish;
   igAccounts: AppAccount[];
+  youtubeAccounts: AppAccount[];
   selectedAcct: AppAccount | undefined;
   selectedType: ContentTypeOption | undefined;
 }
@@ -31,7 +32,7 @@ function PublishButtonIcon({ uploading, scheduleMode }: PublishButtonIconProps) 
   return <Send data-icon="inline-start" />;
 }
 
-export default function SinglePostSettings({ form, publish, igAccounts, selectedAcct, selectedType }: SinglePostSettingsProps) {
+export default function SinglePostSettings({ form, publish, igAccounts, youtubeAccounts, selectedAcct, selectedType }: SinglePostSettingsProps) {
   const { fields, setField, contentType } = form;
   const footer = (
     <Button size="lg" className="w-full" onClick={publish.handlePublish} disabled={publish.uploading || !form.canPublish}>
@@ -41,9 +42,15 @@ export default function SinglePostSettings({ form, publish, igAccounts, selected
   );
   return (
     <DetailPanel title="Post settings" footer={footer}>
-      <FieldRow label="Account">
-        <AccountSelect accounts={igAccounts} value={form.selectedAccount} onChange={form.setSelectedAccount} />
-      </FieldRow>
+      <PublishDestinations
+        instagramAccounts={igAccounts} youtubeAccounts={youtubeAccounts}
+        instagramEnabled={form.publishInstagram} onInstagramEnabled={form.setPublishInstagram}
+        instagramAccount={form.selectedAccount} onInstagramAccount={form.setSelectedAccount}
+        youtubeAccount={form.youtubeAccount} onYoutubeAccount={form.setYoutubeAccount}
+        title={form.youtubeTitle} onTitle={form.setYoutubeTitle}
+        description={form.youtubeDescription} onDescription={form.setYoutubeDescription}
+        privacy={form.youtubePrivacy} onPrivacy={form.setYoutubePrivacy}
+      />
 
       {contentType === 'IMAGE' && (
         <FieldRow label="Alt text" hint="Describes the photo for people using screen readers." htmlFor="alt-text">

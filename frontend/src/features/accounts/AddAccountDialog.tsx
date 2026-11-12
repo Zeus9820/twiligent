@@ -1,7 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ChoiceCard from '@/components/ChoiceCard';
-import InstagramTesterNotice from '@/components/InstagramTesterNotice';
 import { PLATFORM_META } from '@/lib/accounts';
 import { PLATFORM_CHOICES, platformChoiceTitle } from './platformChoices';
 import YouTubeAccountFields from './YouTubeAccountFields';
@@ -62,9 +61,8 @@ export default function AddAccountDialog({ flow }: AddAccountDialogProps) {
         {platform === 'instagram' && (
           <div className="flex flex-col gap-4">
             <p className="text-sm text-ink-muted">
-              We open Instagram so you can sign in and approve access. When you finish, Instagram sends you back here and the account appears in the list. The account must be an Instagram Business or Creator account; personal accounts cannot be connected.
+              Connect an Instagram Business or Creator account. You may be asked to sign in and approve access.
             </p>
-            <InstagramTesterNotice />
           </div>
         )}
 

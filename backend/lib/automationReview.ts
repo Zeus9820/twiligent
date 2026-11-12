@@ -42,6 +42,6 @@ export async function findSentReply(
 // what the person sees on a reply that was looked for and not found, after this many checks
 export function reviewNote(checks: number): string {
     const left = REVIEW_MAX_CHECKS - checks;
-    const later = left > 0 ? ' Twiligent looks again later.' : '';
-    return `Twiligent checked the conversation on Instagram and did not find this reply.${later} Check it yourself before you retry; Instagram refuses a second private reply to the same comment.`;
+    const later = left > 0 ? ' Kratos Studio looks again later.' : '';
+    return `Kratos Studio checked the conversation on Instagram and did not find this reply.${later} Check it yourself before you retry; Instagram refuses a second private reply to the same comment.`;
 }

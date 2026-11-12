@@ -1,6 +1,7 @@
 import { resolveChannelId, fetchChannelData } from './youtube/youtubeChannels.ts';
 import { fetchRedditProfile } from './reddit/redditApi.ts';
 import { fetchInstagramProfile } from './instagram/instagramApi.ts';
+import { fetchWindsorProfile } from './instagram/windsorInstagram.ts';
 import { exchangeForLongLivedToken, refreshLongLivedToken } from './instagram/instagramTokens.ts';
 import { buildYouTubeAccount, buildRedditAccount, buildInstagramAccount } from './accountFactory.ts';
 import { ConflictError, NotConfiguredError, NotFoundError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
@@ -135,8 +136,12 @@ export function createAccountService({ accounts, cache, audit, config, context }
     }
 
     // the platform call needs these fields; a missing one is reported before any request goes out
-    async function fetchProfileUpdates(account: Account, full: boolean): Promise<Partial<Account>> {
+    async function fetchProfileUpdates(account: Account, full: boolean, userId: string): Promise<Partial<Account>> {
         if (account.platform === 'instagram') {
+            if (account.instagramProvider === 'windsor') {
+                if (!config.windsor || config.windsor.ownerUserId !== userId || !account.igUserId) throw new ValidationError('Windsor is not configured for this account');
+                return instagramUpdates(await fetchWindsorProfile(config.windsor.apiKey, account.igUserId, signal), full);
+            }
             if (!account.accessToken) throw new ValidationError(NO_TOKEN_MESSAGE);
             return instagramUpdates(await fetchInstagramProfile(account.igUserId, account.accessToken, signal), full);
         }
@@ -150,7 +155,7 @@ export function createAccountService({ accounts, cache, audit, config, context }
     }
 
     async function refreshListed(userId: string, account: Account): Promise<void> {
-        const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, false) };
+        const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, false, userId) };
         await accounts.updateForUser(account.id, updates, userId);
     }
 
@@ -206,7 +211,7 @@ export function createAccountService({ accounts, cache, audit, config, context }
 
         async refresh(userId, accountId) {
             const account = await findOwned(userId, accountId);
-            const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, true) };
+            const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, true, userId) };
             await accounts.updateForUser(account.id, updates, userId);
             return { ...account, ...updates };
         },

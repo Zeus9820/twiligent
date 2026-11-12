@@ -23,6 +23,7 @@ export interface InstagramOAuthConfig {
     redirectUri: string;
     appId: string | undefined;
     appSecret: string | undefined;
+    configId?: string | undefined;
 }
 
 // the Send Email hook; each value is undefined when its Worker secret is not set
@@ -46,6 +47,8 @@ export interface AutomationConfig {
 }
 
 export interface AppConfig {
+    youtubeStudio?: { clientId: string; clientSecret: string; tokenKey: string; redirectUri: string; frontendUrl: string };
+    windsor?: { apiKey: string; ownerUserId: string };
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
     allowedOrigins: string[];
@@ -109,12 +112,15 @@ export function corsOrigins(config: AppConfig, requestUrl: string): string[] {
 export function readInstagramOAuthConfig(env: Env): InstagramOAuthConfig {
     const frontendUrl = cleanUrl(env.FRONTEND_URL, DEFAULT_FRONTEND_URL).replace(/\/$/, '');
     const backendUrl = cleanUrl(env.BACKEND_URL, DEFAULT_BACKEND_URL).replace(/\/$/, '');
-    return {
+    const config: InstagramOAuthConfig = {
         frontendUrl,
         redirectUri: `${backendUrl}${CALLBACK_PATH}`,
         appId: cleanSecret(env.INSTAGRAM_APP_ID),
         appSecret: cleanSecret(env.INSTAGRAM_APP_SECRET),
     };
+    const configId = cleanSecret(env.INSTAGRAM_CONFIG_ID);
+    if (configId) config.configId = configId;
+    return config;
 }
 
 // a missing, malformed or non-positive limit falls back to the default rather than stopping every email
@@ -157,7 +163,18 @@ export function readAutomationConfig(env: Env): AutomationConfig {
 }
 
 export function readConfig(env: Env): AppConfig {
+    const windsorKey = cleanSecret(env.WINDSOR_API_KEY);
+    const windsorOwner = cleanSecret(env.WINDSOR_OWNER_USER_ID);
     return {
+        ...(cleanSecret(env.GOOGLE_YOUTUBE_CLIENT_ID) && cleanSecret(env.GOOGLE_YOUTUBE_CLIENT_SECRET) && cleanSecret(env.GOOGLE_YOUTUBE_TOKEN_KEY) ? {
+            youtubeStudio: {
+                clientId: cleanSecret(env.GOOGLE_YOUTUBE_CLIENT_ID)!, clientSecret: cleanSecret(env.GOOGLE_YOUTUBE_CLIENT_SECRET)!,
+                tokenKey: cleanSecret(env.GOOGLE_YOUTUBE_TOKEN_KEY)!,
+                redirectUri: `${cleanUrl(env.BACKEND_URL, DEFAULT_BACKEND_URL).replace(/\/$/, '')}/api/auth/youtube/callback`,
+                frontendUrl: cleanUrl(env.FRONTEND_URL, DEFAULT_FRONTEND_URL).replace(/\/$/, ''),
+            },
+        } : {}),
+        ...(windsorKey && windsorOwner ? { windsor: { apiKey: windsorKey, ownerUserId: windsorOwner } } : {}),
         youtubeApiKey: cleanSecret(env.YOUTUBE_API_KEY),
         instagram: readInstagramOAuthConfig(env),
         allowedOrigins: allowedOrigins(env),

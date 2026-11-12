@@ -22,4 +22,4 @@ export const LOGIN_COPY: Record<LoginView, LoginCopy> = {
 };
 
 // the public site's Get started buttons open /login?mode=signup; the same code creates the account
-export const SIGN_UP_TITLE = 'Create your Twiligent account';
+export const SIGN_UP_TITLE = 'Create your Kratos Studio account';

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +20,10 @@ export default function PublishedVideoManager({ accountId }: { accountId: string
     catch (error) { setMessage((error as Error).message); }
     finally { setBusy(false); }
   }
+  useEffect(() => { void load(); }, [accountId]);
+  useEffect(() => {
+    if (edit) document.getElementById('manage-title')?.focus();
+  }, [edit?.id]);
   async function save() {
     if (!edit) return;
     setBusy(true); setMessage('');
@@ -40,7 +44,7 @@ export default function PublishedVideoManager({ accountId }: { accountId: string
       {message && <p role="status">{message}</p>}
       {videos.map(video => <div key={video.id} className="flex flex-wrap items-center justify-between gap-3 rounded-control border p-3">
         <div><a href={`https://www.youtube.com/watch?v=${video.id}`} target="_blank" rel="noopener noreferrer" className="underline">{video.title}</a><p className="text-sm">{video.privacyStatus}</p></div>
-        <div className="flex gap-2"><Button variant="outline" disabled={busy} onClick={() => setEdit({ ...video })}>Edit</Button><Button variant="destructive" disabled={busy} onClick={() => setRemoving(video)}>Delete</Button></div>
+        <div className="flex gap-2"><Button variant="outline" disabled={busy} onClick={() => { setEdit({ ...video }); setTimeout(() => document.getElementById('manage-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0); }}>Edit</Button><Button variant="destructive" disabled={busy} onClick={() => setRemoving(video)}>Delete</Button></div>
       </div>)}
       {next && <Button variant="outline" disabled={busy} onClick={() => load(next)}>Load more</Button>}
       {edit && <form className="flex flex-col gap-3 rounded-control border p-4" onSubmit={event => { event.preventDefault(); void save(); }}>

@@ -57,6 +57,7 @@ export default function ChannelAnalytics() {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader title={account?.title || 'YouTube channel'} back={BACK} />
+        {id && <YouTubeStudioPanel accountId={id} connected={!!account?.youtubeAnalyticsConnected} />}
         <SurfaceBox>
           <EmptyState
             icon={<BarChart2 />}

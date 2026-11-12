@@ -61,7 +61,12 @@ export function createYouTubeStudioService({ accounts, config, context }: { acco
         if (!token.access_token) throw new ValidationError('Reconnect YouTube to manage videos.');
         async function call(path: string, init: RequestInit = {}) {
             const response = await fetch(`https://www.googleapis.com/youtube/v3/${path}`, { ...init, headers: { Authorization: `Bearer ${token.access_token}`, 'Content-Type': 'application/json' }, signal: context.signal });
-            if (!response.ok) throw new UpstreamError('YouTube rejected this action. Reconnect and approve video management access, then try again.');
+            if (!response.ok) {
+                const error = await response.json().catch(() => null) as { error?: { message?: string; errors?: Array<{ reason?: string }> } } | null;
+                const reason = error?.error?.errors?.[0]?.reason;
+                if (reason === 'insufficientPermissions' || response.status === 401) throw new ValidationError('Your Google connection does not have video editing access. Click Reconnect YouTube for video management and approve the requested permissions.');
+                throw new UpstreamError(`YouTube could not complete this action: ${error?.error?.message || response.status}`);
+            }
             return response;
         }
         return { account, call };

@@ -23,14 +23,14 @@ import { useSinglePostForm } from './useSinglePostForm';
 import { useSinglePublish } from './useSinglePublish';
 import type { AppAccount } from '../../utils/formatters';
 
-type UploadMode = 'single' | 'bulk';
+type UploadMode = 'single' | 'bulk' | 'youtube';
 
 export default function UploadContent() {
   const { accounts, showToast } = useAppContext();
   const cloudConfig = useMediaStorageConfig(accounts);
   const [igAccounts, setIgAccounts] = useState<AppAccount[]>([]);
   const [youtubeAccounts, setYoutubeAccounts] = useState<AppAccount[]>([]);
-  const [uploadMode, setUploadMode] = useState<UploadMode>('single');
+  const [uploadMode, setUploadMode] = useState<UploadMode>(new URLSearchParams(window.location.search).get('platform') === 'youtube' ? 'youtube' : 'single');
   const schedule = useScheduledPosts();
   const { loadScheduledPosts } = schedule;
   const editor = useScheduledPostEdit({ showToast, loadScheduledPosts });
@@ -55,9 +55,28 @@ export default function UploadContent() {
     loadScheduledPosts();
   }, [accounts, setSelectedAccount, loadScheduledPosts, bulk.settings.account, bulk.setSetting]);
 
+  const chooseMode = (value: string) => {
+    setUploadMode(value as UploadMode);
+    if (value === 'youtube') {
+      if (form.contentType !== 'REELS') form.changeContentType('REELS');
+      form.setPublishInstagram(false);
+      form.setYoutubeAccount(form.youtubeAccount || youtubeAccounts[0]?.id || '');
+      form.setField('scheduleMode', false);
+    }
+  };
+  useEffect(() => {
+    if (uploadMode === 'youtube' && youtubeAccounts.length && !form.youtubeAccount) {
+      form.setYoutubeAccount(youtubeAccounts[0].id);
+    }
+  }, [uploadMode, youtubeAccounts, form.youtubeAccount, form.setYoutubeAccount]);
+
   const resetAll = () => {
     form.resetForm();
     publish.resetProgress();
+    if (uploadMode === 'youtube') {
+      form.changeContentType('REELS');
+      form.setPublishInstagram(false);
+    }
   };
 
   if (igAccounts.length === 0 && youtubeAccounts.length === 0) return <NoInstagramAccount />;
@@ -66,13 +85,13 @@ export default function UploadContent() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Publish"
-        description="Post and schedule photos, Reels and Stories to Instagram."
+        description="Publish YouTube Shorts and Instagram Reels. Upload once to either platform or both."
         actions={publish.publishStatus === 'done' && uploadMode === 'single' && (
           <Button onClick={resetAll}><Plus data-icon="inline-start" />Publish another</Button>
         )}
       />
 
-      {!cloudConfig && (
+      {!cloudConfig && form.publishInstagram && (
         <Alert variant="warning">
           <AlertCircle />
           <AlertDescription>
@@ -81,15 +100,19 @@ export default function UploadContent() {
         </Alert>
       )}
 
-      <Tabs value={uploadMode} onValueChange={setUploadMode} className="gap-6">
+      <Tabs value={uploadMode} onValueChange={chooseMode} className="gap-6">
         <TabsList>
-          <TabsTrigger value="single"><Upload />Single post</TabsTrigger>
+          <TabsTrigger value="youtube"><Upload />YouTube Short</TabsTrigger>
+          <TabsTrigger value="single"><Upload />Instagram / both</TabsTrigger>
           <TabsTrigger value="bulk">
             <FolderUp />Bulk upload
             {queue.files.length > 0 && <Badge variant="solid" className="h-4 px-1.5">{queue.files.length}</Badge>}
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="youtube">
+          <SinglePostTab form={form} publish={publish} igAccounts={igAccounts} youtubeAccounts={youtubeAccounts} onReset={resetAll} />
+        </TabsContent>
         <TabsContent value="single">
           <SinglePostTab form={form} publish={publish} igAccounts={igAccounts} youtubeAccounts={youtubeAccounts} onReset={resetAll} />
         </TabsContent>

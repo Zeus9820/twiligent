@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, MessageSquare, Play, PlaySquare, Plus, RefreshCw, ThumbsUp } from 'lucide-react';
+import { Eye, MessageSquare, Play, PlaySquare, Plus, RefreshCw, ThumbsUp, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/PageHeader';
@@ -120,6 +120,7 @@ export default function VideoExplorer() {
   return (
     <div className="flex flex-col gap-6">
       {header}
+      <Button className="self-start" render={<Link to="/upload?platform=youtube" />}><Upload />Publish YouTube Short</Button>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <MetricBox small icon={<Play />} label="Videos" value={fmtNum(stats.total)} />

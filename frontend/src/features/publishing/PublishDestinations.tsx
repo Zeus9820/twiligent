@@ -64,6 +64,7 @@ export default function PublishDestinations(props: PublishDestinationsProps) {
           </select>
         </label>
       </div>}
+      {props.youtubeAccounts.length === 0 && <p className="text-sm text-ink-muted">Add a YouTube channel in Accounts to enable Shorts publishing.</p>}
       <p className="text-caption text-ink-faint">YouTube Shorts must be square or vertical, and 3 minutes or shorter.</p>
     </div>
   );

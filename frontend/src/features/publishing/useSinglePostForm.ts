@@ -19,12 +19,12 @@ const INITIAL_FIELDS: SinglePostFields = {
 export function useSinglePostForm() {
   const media = useSinglePostMedia();
   const [selectedAccount, setSelectedAccount] = useState<string>('');
-  const [publishInstagram, setPublishInstagram] = useState(true);
+  const [publishInstagram, setPublishInstagram] = useState(new URLSearchParams(window.location.search).get('platform') !== 'youtube');
   const [youtubeAccount, setYoutubeAccount] = useState('');
   const [youtubeTitle, setYoutubeTitle] = useState('');
   const [youtubeDescription, setYoutubeDescription] = useState('');
   const [youtubePrivacy, setYoutubePrivacy] = useState<'private' | 'unlisted' | 'public'>('private');
-  const [contentType, setContentType] = useState<ContentTypeValue | ''>('');
+  const [contentType, setContentType] = useState<ContentTypeValue | ''>(new URLSearchParams(window.location.search).get('platform') === 'youtube' ? 'REELS' : '');
   const [fields, setFields] = useState<SinglePostFields>(INITIAL_FIELDS);
 
   const setField = <K extends keyof SinglePostFields>(name: K, value: SinglePostFields[K]) => setFields(prev => ({ ...prev, [name]: value }));

@@ -38,8 +38,12 @@ export interface InstagramMetricsProps {
 
 export default function InstagramMetrics({ profile, analytics }: InstagramMetricsProps) {
   const typeStats: Partial<InstagramContentTypeStatsMap> = analytics.contentTypeStats || {};
+  const fetched = analytics.fetchedPosts ?? 0;
+  const reported = analytics.mediaWithViews ?? 0;
+  const missing = Math.max(0, fetched - reported);
   return (
     <div className="flex flex-col gap-3">
+      {missing > 0 && <p role="status" className="rounded-control border border-line p-3 text-sm text-ink-muted">Meta did not report views for {missing} of {fetched} fetched posts. The view count below includes only {reported} posts and is incomplete. Changes in reporting coverage can make it decrease; this does not establish that your actual views fell.</p>}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <MetricBox small icon={<Users />}         label="Followers"       value={fmtNum(profile.followersCount)}                   subtitle={fmtNumFull(profile.followersCount)} highlight />
         <MetricBox small icon={<UserPlus />}      label="Following"       value={fmtNum(profile.followsCount)}                     subtitle={fmtNumFull(profile.followsCount)} />
@@ -49,7 +53,7 @@ export default function InstagramMetrics({ profile, analytics }: InstagramMetric
         <MetricBox small icon={<TrendingUp />}    label="Engagement rate" value={`${analytics.engagementRate || 0}%`}              subtitle={`${fmtNum(analytics.avgLikes)} likes per post on average`} />
       </div>
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <MetricBox small icon={<Eye />} label="Fetched media views" value={analytics.mediaWithViews ? fmtNum(analytics.totalViews) : '—'} subtitle={`${analytics.mediaWithViews || 0} of ${analytics.fetchedPosts || 0} items report views`} />
+        <MetricBox small icon={<Eye />} label={missing > 0 ? "Partial reported views" : "Fetched media views"} value={reported ? fmtNumFull(analytics.totalViews) : '—'} subtitle={`${analytics.mediaWithViews || 0} of ${analytics.fetchedPosts || 0} items report views`} />
         {IG_CONTENT_TYPES.map(type => <ContentTypeMetric key={type} type={type} stats={typeStats[type] || {}} />)}
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">

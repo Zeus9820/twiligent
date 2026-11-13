@@ -32,6 +32,6 @@ export const getInstagramAnalytics = controller.createHandlers(async c => {
 });
 
 export const getInstagramMedia = controller.createHandlers(async c => {
-    const result = await servicesFor(c).instagramAnalytics.media(c.get('userId'), pathParam(c, 'id'));
+    const result = await servicesFor(c).instagramAnalytics.media(c.get('userId'), pathParam(c, 'id'), c.req.query('fresh') === '1');
     return c.json({ success: true, ...result } satisfies InstagramMediaResponse);
 });

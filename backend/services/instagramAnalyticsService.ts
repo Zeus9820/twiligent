@@ -32,7 +32,7 @@ export interface InstagramMediaList {
 
 export interface InstagramAnalyticsService {
     analytics(userId: string, accountId: string): Promise<InstagramAccountAnalytics>;
-    media(userId: string, accountId: string): Promise<InstagramMediaList>;
+    media(userId: string, accountId: string, fresh?: boolean): Promise<InstagramMediaList>;
 }
 
 type ConnectedInstagramAccount = Account & { igUserId: string; accessToken: string };
@@ -74,9 +74,9 @@ export function createInstagramAnalyticsService({ accounts, cache, context, conf
             return { profile, account: safeAccount(account), analytics, mediaCount: media.length };
         },
 
-        async media(userId, accountId) {
-            const cached = await cache.getInstagramMedia(userId, accountId);
-            if (cached?.media) return { media: cached.media, fetchedAt: cached.fetchedAt };
+        async media(userId, accountId, fresh = false) {
+            const cached = fresh ? null : await cache.getInstagramMedia(userId, accountId);
+            if (cached?.media && Date.now() - Date.parse(cached.fetchedAt) < 300_000) return { media: cached.media, fetchedAt: cached.fetchedAt };
             const account = await findConnected(userId, accountId);
             const media = account.instagramProvider === 'windsor' && config?.windsor
                 ? await fetchWindsorMedia(config.windsor.apiKey, account.igUserId, signal)

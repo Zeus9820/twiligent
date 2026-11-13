@@ -49,7 +49,7 @@ export default function InstagramMetrics({ profile, analytics }: InstagramMetric
         <MetricBox small icon={<TrendingUp />}    label="Engagement rate" value={`${analytics.engagementRate || 0}%`}              subtitle={`${fmtNum(analytics.avgLikes)} likes per post on average`} />
       </div>
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <MetricBox small icon={<Eye />} label="Total views" value={fmtNum(analytics.totalViews)} subtitle={`${analytics.mediaWithViews || 0} of ${analytics.fetchedPosts || 0} items report views`} />
+        <MetricBox small icon={<Eye />} label="Fetched media views" value={analytics.mediaWithViews ? fmtNum(analytics.totalViews) : '—'} subtitle={`${analytics.mediaWithViews || 0} of ${analytics.fetchedPosts || 0} items report views`} />
         {IG_CONTENT_TYPES.map(type => <ContentTypeMetric key={type} type={type} stats={typeStats[type] || {}} />)}
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">

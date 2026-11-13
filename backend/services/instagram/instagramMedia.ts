@@ -52,7 +52,7 @@ export function classifyInstagramMedia(raw: Partial<InstagramApiMedia> | null | 
 }
 
 export function extractInstagramViews(raw: Partial<InstagramApiMedia> | null | undefined): number | null {
-    const metric = raw?.insights?.data?.find(insight => insight.name === 'views');
+    const metric = raw?.insights?.data?.find(insight => insight?.name === 'views');
     const value = metric?.values?.[0]?.value ?? metric?.total_value?.value;
     const views = Number(value);
     return value !== undefined && value !== null && Number.isFinite(views) ? views : null;
@@ -86,7 +86,20 @@ async function fetchMediaPage(
     } catch (err) {
         if (err instanceof UpstreamTimeoutError) throw err;
         // one item without insights (e.g. pre-professional posts) fails the whole page
-        return igFetch<InstagramApiMediaPage>(`/${igUserId}/media`, { ...params, fields: MEDIA_FIELDS }, 1, signal);
+        const fallback = await igFetch<InstagramApiMediaPage>(`/${igUserId}/media`, { ...params, fields: MEDIA_FIELDS }, 1, signal);
+        // Isolate unsupported media instead of losing views for every post on the page.
+        let cursor = 0;
+        const items = (fallback.data ?? []).filter(item => item?.id && extractInstagramViews(item) === null);
+        await Promise.all(Array.from({ length: Math.min(4, items.length) }, async () => {
+            while (cursor < items.length && !signal?.aborted) {
+                const item = items[cursor++];
+                try {
+                    const insights = await igFetch<{ data?: InstagramApiInsight[] }>(`/${item.id}/insights`, { access_token: accessToken, metric: 'views' }, 0, signal);
+                    item.insights = insights;
+                } catch { /* Unavailable insight stays null; never substitute reach or likes. */ }
+            }
+        }));
+        return fallback;
     }
 }
 

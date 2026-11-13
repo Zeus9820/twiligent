@@ -43,7 +43,7 @@ export async function fetchWindsorMedia(key: string, accountId: string, signal?:
         return { id: string(item.media_id), caption: string(item.media_caption), contentType, mediaType, mediaUrl: string(item.media_url),
             thumbnailUrl: contentType === 'post' ? string(item.media_url) : '', permalink: string(item.media_permalink), timestamp: string(item.timestamp),
             likeCount: number(item.media_like_count), commentsCount: number(item.media_comments_count),
-            viewCount: typeof item.media_views === 'number' ? item.media_views : null };
+            viewCount: item.media_views !== null && item.media_views !== undefined && String(item.media_views).trim() !== '' && Number.isFinite(Number(item.media_views)) && Number(item.media_views) >= 0 ? Number(item.media_views) : null };
     }).sort((a, b) => (Date.parse(b.timestamp) || 0) - (Date.parse(a.timestamp) || 0));
 }
 

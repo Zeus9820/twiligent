@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { test, describe, afterEach } from 'node:test';
 import { classifyInstagramMedia, extractInstagramViews, normalizeInstagramMedia, fetchInstagramMedia } from '../../../services/instagram/instagramMedia.ts';
 import type { InstagramApiMedia } from '../../../services/instagram/instagramMedia.ts';
@@ -30,6 +31,7 @@ describe('instagram media golden output', () => {
     test('pages through media, falls back without insights and dedupes', async () => {
         fetchMock = installFetch((request) => {
             const params = new URL(request.url).searchParams;
+            if (new URL(request.url).pathname.endsWith('/insights')) return reply({ error: { message: 'insights unavailable' } });
             const after = params.get('after') ?? '';
             if (after === 'p2' && params.get('fields')!.includes('insights')) return reply({ error: { message: 'insights unavailable' } });
             if (after === '') return reply({ data: [rawItems[0], rawItems[1], null, { media_type: 'IMAGE' }], paging: { next: 'https://next', cursors: { after: 'p2' } } });
@@ -38,7 +40,7 @@ describe('instagram media golden output', () => {
         });
         const media = await fetchInstagramMedia('17841', 'TOKEN');
         const limited = await fetchInstagramMedia('17841', 'TOKEN', 2);
-        assertGolden({ media, limited, requests: fetchMock.requests }, 'instagramMedia.paging');
+        assertGolden({ media, limited, requests: fetchMock.requests.filter(request => !new URL(request.url).pathname.endsWith('/insights')) }, 'instagramMedia.paging');
     });
 
     test('stops after ten pages even when more are offered', async () => {
@@ -50,4 +52,17 @@ describe('instagram media golden output', () => {
         const media = await fetchInstagramMedia('17841', 'TOKEN');
         assertGolden({ ids: media.map(item => item.id), requestCount: fetchMock.requests.length }, 'instagramMedia.pageCap');
     });
+});
+
+test('recovers supported post views when another post rejects page insights', async () => {
+    fetchMock = installFetch(request => {
+        const url = new URL(request.url);
+        if (url.pathname.endsWith('/healthy/insights')) return reply({ data: [{ name: 'views', values: [{ value: 123 }] }] });
+        if (url.pathname.endsWith('/unavailable/insights')) return reply({ error: { message: 'No insights for this post' } });
+        if (url.searchParams.get('fields')?.includes('insights')) return reply({ error: { message: 'One post does not support insights' } });
+        return reply({ data: [{ id: 'healthy', media_type: 'VIDEO' }, { id: 'unavailable', media_type: 'IMAGE' }] });
+    });
+    const media = await fetchInstagramMedia('17841', 'TOKEN');
+    assert.equal(media[0].viewCount, 123);
+    assert.equal(media[1].viewCount, null);
 });

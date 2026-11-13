@@ -55,7 +55,7 @@ export default function InstagramAnalytics() {
 
       {refreshing && <Progress value={null} aria-label="Refreshing account" />}
 
-      <InstagramAccountViews key={`views-${account.id}`} accountId={account.id} />
+      <InstagramAccountViews key={`views-${account.id}`} accountId={account.id} totalViews={analyticsData.totalViews ?? 0} fetchedPosts={analyticsData.fetchedPosts ?? 0} reportedPosts={analyticsData.mediaWithViews ?? 0} totalPosts={account.mediaCount ?? 0} />
       <InstagramMediaManager key={account.id} accountId={account.id} posts={analyticsData.recentMedia || []} />
       <InstagramMetrics profile={profileData} analytics={analyticsData} />
       <InstagramInsightChips analytics={analyticsData} />

@@ -1,3 +1,4 @@
+import { fetchAccountViews } from './instagram/accountViews.ts';
 import { fetchInstagramProfile } from './instagram/instagramApi.ts';
 import { fetchInstagramMedia } from './instagram/instagramMedia.ts';
 import { computeInstagramAnalytics } from './instagram/instagramAnalytics.ts';
@@ -31,6 +32,7 @@ export interface InstagramMediaList {
 }
 
 export interface InstagramAnalyticsService {
+    accountViews(userId: string, accountId: string, start: string, end: string): ReturnType<typeof fetchAccountViews>;
     analytics(userId: string, accountId: string): Promise<InstagramAccountAnalytics>;
     media(userId: string, accountId: string, fresh?: boolean): Promise<InstagramMediaList>;
 }
@@ -51,6 +53,11 @@ export function createInstagramAnalyticsService({ accounts, cache, context, conf
     }
 
     return {
+        async accountViews(userId, accountId, start, end) {
+            const account = await findConnected(userId, accountId);
+            if (account.instagramProvider === 'windsor') throw new ValidationError('Account views require a direct Meta connection.');
+            return fetchAccountViews(account.igUserId, account.accessToken, start, end, signal);
+        },
         // always live: the media is cached and the profile counts are saved for the Overview
         async analytics(userId, accountId) {
             const account = await findConnected(userId, accountId);

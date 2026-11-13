@@ -1,7 +1,7 @@
 import { instagramMediaCapabilities, manageInstagramComments, deleteInstagramMedia } from '../controllers/publishingController.ts';
 import { Hono } from 'hono';
 import {
-    getChannelAnalytics, getChannelVideos, getComparison, getVideoLibrary, getInstagramAnalytics, getInstagramMedia,
+    getInstagramAccountViews, getChannelAnalytics, getChannelVideos, getComparison, getVideoLibrary, getInstagramAnalytics, getInstagramMedia,
 } from '../controllers/analyticsController.ts';
 import type { AppEnv } from '../types/app.ts';
 import { getManagedVideo, listManagedVideos, editManagedVideo, deleteManagedVideo, getYouTubeStudioUrl, getYouTubeStudioSummary, startYouTubeShortUpload } from '../controllers/youtubeStudioController.ts';
@@ -22,6 +22,7 @@ router.post('/accounts/:id/youtube-studio/short-uploads', ...startYouTubeShortUp
 router.get('/accounts/:id/videos', ...getChannelVideos);
 router.get('/comparison', ...getComparison);
 router.get('/videos/all', ...getVideoLibrary);
+router.get('/accounts/:id/ig-account-views', ...getInstagramAccountViews);
 router.get('/accounts/:id/ig-analytics', ...getInstagramAnalytics);
 router.get('/accounts/:id/ig-media', ...getInstagramMedia);
 

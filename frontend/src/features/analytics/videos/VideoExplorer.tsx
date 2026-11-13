@@ -1,3 +1,4 @@
+import AiPerformanceAnalysis from '@/components/AiPerformanceAnalysis';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, MessageSquare, Play, PlaySquare, Plus, RefreshCw, ThumbsUp, Upload } from 'lucide-react';
@@ -130,6 +131,7 @@ export default function VideoExplorer() {
         <MetricBox small icon={<Eye />} label="Average views" value={fmtNum(stats.avgViews)} />
       </div>
 
+      <AiPerformanceAnalysis />
       <VideoFilters
         channels={channels}
         search={search}

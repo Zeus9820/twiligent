@@ -1,3 +1,4 @@
+import AiPerformanceAnalysis from '@/components/AiPerformanceAnalysis';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { BarChart2, UserX } from 'lucide-react';
@@ -57,7 +58,8 @@ export default function ChannelAnalytics() {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader title={account?.title || 'YouTube channel'} back={BACK} />
-        {id && <YouTubeStudioPanel accountId={id} connected={!!account?.youtubeAnalyticsConnected} />}
+        {id && <AiPerformanceAnalysis key={id} accountId={id} />}
+      {id && <YouTubeStudioPanel accountId={id} connected={!!account?.youtubeAnalyticsConnected} />}
         <SurfaceBox>
           <EmptyState
             icon={<BarChart2 />}
@@ -75,6 +77,7 @@ export default function ChannelAnalytics() {
   return (
     <div className="flex flex-col gap-6">
       <ChannelHeader account={account} channel={channel} back={BACK} onRefresh={loadAnalytics} />
+      {id && <AiPerformanceAnalysis key={id} accountId={id} />}
       {id && <YouTubeStudioPanel accountId={id} connected={!!channel.youtubeAnalyticsConnected} />}
       {analytics.totalVideos === 0 ? (
         <ChannelNoVideos channel={channel} />

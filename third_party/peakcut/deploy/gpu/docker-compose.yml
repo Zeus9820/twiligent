@@ -1,0 +1,27 @@
+# The speech-to-text machine. Run on a server with an NVIDIA card, the NVIDIA driver and the NVIDIA container toolkit:
+#   PEAKCUT_ASR_TOKEN=<the shared secret> docker compose -f deploy/gpu/docker-compose.yml up -d --build
+# Then, on the main PeakCut server, set PEAKCUT_ASR_URL=http://<this machine's private address>:9000 and the same
+# PEAKCUT_ASR_TOKEN. Keep port 9000 closed to the internet: only the private network should reach it.
+services:
+  asr:
+    build:
+      context: ../..
+      dockerfile: deploy/gpu/Dockerfile
+    restart: unless-stopped
+    environment:
+      PEAKCUT_ASR_TOKEN: ${PEAKCUT_ASR_TOKEN:?set PEAKCUT_ASR_TOKEN}
+      PEAKCUT_ASR_BATCH: ${PEAKCUT_ASR_BATCH:-16}
+      PEAKCUT_ASR_COPIES: ${PEAKCUT_ASR_COPIES:-1}
+    ports: ["9000:9000"]
+    volumes:
+      - asrdata:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  asrdata:

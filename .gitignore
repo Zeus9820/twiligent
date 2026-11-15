@@ -59,3 +59,7 @@ docs/screenshots/reference/
 .gcp-authentication
 .env.dev
 ENV.DEV_USAGE.md
+
+# Local clipping environment and artifacts
+.local/
+processor/__pycache__/

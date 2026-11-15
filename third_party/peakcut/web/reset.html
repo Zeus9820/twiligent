@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset your PeakCut password</title>
+<meta name="description" content="Reset the password for your PeakCut account.">
+<link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#FF8B33;--brand-hi:#FF9A4C;--ink:#2A1A12;--soft:#FFF2E8;--line-b:#FFD9BC;--deep:#A9480A;
+  --frame:#1E1612;--frame-2:#2C221D;--frame-text:#F4EEEA;--frame-dim:#A99A91;
+  --muted:#F7F4F1;--line:#EEE8E4;--line-2:#E1D9D3;--text:#211813;--dim:#6D6159;--faint:#A0948C;--bad:#D3343F;--bad-soft:#FDECEE;
+  --r-lg:16px;--r:12px;--r-sm:8px;color-scheme:light}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;color:var(--text);font:16px/1.55 "Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+a{color:inherit}
+svg{width:18px;height:18px;flex:none;fill:currentColor}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:var(--r);border:1px solid var(--line-2);background:#fff;color:var(--text);
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.btn:hover{background:var(--muted);border-color:#D4CAC3}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--ink)}
+.btn.primary:hover{background:var(--brand-hi);border-color:var(--brand-hi)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}.btn.dark:hover{background:#3A2C25;border-color:#3A2C25}
+.btn.sm{height:38px;padding:0 14px;font-size:14px}
+.btn.lg{height:52px;padding:0 26px;font-size:16px}
+.btn:disabled{opacity:.5;cursor:default}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+body{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);background:var(--frame)}
+.side{color:var(--frame-text);padding:40px 48px;display:flex;flex-direction:column;justify-content:space-between;min-height:100vh}
+.side img{height:38px}
+.side h1{font-size:clamp(30px,3.2vw,42px);line-height:1.1;letter-spacing:-.03em;font-weight:700;color:#fff;max-width:440px}
+.side h1 em{font-style:normal;color:var(--brand)}
+.side ul{list-style:none;padding:0;margin:28px 0 0;display:flex;flex-direction:column;gap:14px;color:var(--frame-dim);font-size:16px}
+.side li{display:flex;gap:12px;align-items:flex-start}.side li svg{color:var(--brand);margin-top:3px}
+.side small{color:var(--frame-dim);font-size:13px}
+.main{background:#fff;margin:8px 8px 8px 0;border-radius:var(--r-lg);display:grid;place-items:center;padding:32px 20px}
+.card{width:100%;max-width:400px}
+.card h2{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--ink)}
+.card>p{color:var(--dim);margin:8px 0 26px}
+form{display:flex;flex-direction:column;gap:16px}
+label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:600;color:var(--dim)}
+input{height:46px;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:#fff;font:inherit;color:var(--text);outline:none;transition:border-color .15s ease,background-color .15s ease}
+input:hover{border-color:#D4CAC3}input:focus{border-color:var(--brand);background:#fff}
+input:focus-visible{outline:none}
+input::placeholder{color:var(--faint)}
+.btn{width:100%;height:48px}
+.or{display:flex;align-items:center;gap:14px;color:var(--faint);font-size:13px;margin:20px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.err{display:none;background:var(--bad-soft);color:var(--bad);padding:11px 14px;border-radius:var(--r);font-size:14px;font-weight:500}
+.err.on{display:block}
+.swap{margin-top:22px;text-align:center;color:var(--dim);font-size:15px}
+.swap a{color:var(--deep);font-weight:600;text-decoration:none}.swap a:hover{text-decoration:underline}
+.hint{font-size:13px;color:var(--faint);font-weight:400}
+.pwrow{display:flex;justify-content:space-between;align-items:baseline}
+.pwrow a{font-size:13px;font-weight:600;color:var(--deep);text-decoration:none}.pwrow a:hover{text-decoration:underline}
+.legal{margin-top:14px;font-size:12px;color:var(--faint);text-align:center;line-height:1.5}
+.legal a{color:var(--dim)}
+.g{width:20px;height:20px}
+.mobile-logo{display:none}
+@media (max-width:860px){body{grid-template-columns:1fr;background:#fff}.side{display:none}.main{margin:0;border-radius:0;min-height:100vh;align-content:center}.mobile-logo{display:block;height:34px;margin-bottom:28px}}
+</style>
+</head>
+<body>
+<aside class="side">
+  <a href="/" aria-label="PeakCut home"><img src="/brand/logo-light.svg" alt="PeakCut"></a>
+  <div>
+    <h1>Clips from every stream, <em>without watching all of it.</em></h1>
+    <ul>
+      <li><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg><span>Records live streams and clips them as they happen</span></li>
+      <li><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg><span>Vertical shorts with word-by-word captions and a hook</span></li>
+      <li><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg><span>Free and open source: runs on your own AI key</span></li>
+    </ul>
+  </div>
+  <small>© <span id="year"></span> PeakCut · <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a></small>
+</aside>
+<main class="main"><div class="card">
+  <a href="/"><img class="mobile-logo" src="/brand/logo.svg" alt="PeakCut"></a>
+  <h2 id="h">Reset your password</h2><p id="p">Enter the email you signed up with and we'll send you a link to choose a new password.</p>
+  <form id="ask" novalidate>
+    <div class="err" id="err" role="alert"></div>
+    <label>Email<input id="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+    <button class="btn primary" id="go1">Send reset link</button>
+  </form>
+  <div id="sent" hidden><div class="okbox">If there's an account for that email, a reset link is on its way. It works for one hour. Check your spam folder if you don't see it.</div></div>
+  <form id="set" novalidate hidden>
+    <div class="err" id="err2" role="alert"></div>
+    <label>New password<input id="pw" type="password" autocomplete="new-password" required minlength="8"><span class="hint">At least 8 characters.</span></label>
+    <label>Type it again<input id="pw2" type="password" autocomplete="new-password" required minlength="8"></label>
+    <button class="btn primary" id="go2">Save new password</button>
+  </form>
+  <p class="swap"><a href="/login">Back to sign in</a></p>
+</div></main>
+<style>.okbox{background:#E9F6EE;color:#1F7A4D;padding:14px 16px;border-radius:var(--r);font-size:15px;line-height:1.5}</style>
+<script>
+document.getElementById("year").textContent = new Date().getFullYear();
+const q = new URLSearchParams(location.search), token = q.get("t");
+const $ = id => document.getElementById(id);
+const fail = (box, m) => { $(box).textContent = m; $(box).classList.add("on"); };
+if (token) {
+  $("ask").hidden = true; $("set").hidden = false;
+  $("h").textContent = "Choose a new password"; $("p").textContent = "You'll be signed in, and signed out everywhere else.";
+}
+$("ask").addEventListener("submit", async e => {
+  e.preventDefault(); $("err").classList.remove("on");
+  const email = $("email").value.trim(); if (!email) return fail("err", "Enter your email.");
+  $("go1").disabled = true;
+  try {
+    const r = await fetch("/api/auth/forgot", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email})});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Something went wrong. Try again.");
+    $("ask").hidden = true; $("sent").hidden = false;
+  } catch (err) { fail("err", err.message); $("go1").disabled = false; }
+});
+$("set").addEventListener("submit", async e => {
+  e.preventDefault(); $("err2").classList.remove("on");
+  const a = $("pw").value, b = $("pw2").value;
+  if (a.length < 8) return fail("err2", "Use at least 8 characters.");
+  if (a !== b) return fail("err2", "The two passwords don't match.");
+  $("go2").disabled = true;
+  try {
+    const r = await fetch("/api/auth/reset", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({token, password:a})});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Something went wrong. Try again.");
+    location.href = "/app";
+  } catch (err) { fail("err2", err.message); $("go2").disabled = false; }
+});
+</script>
+</body>
+</html>

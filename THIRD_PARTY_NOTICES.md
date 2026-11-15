@@ -9,3 +9,10 @@ Twiligent includes work by others under their own licences. This file gives the 
 - **Source:** [Solar Icons Set](https://www.figma.com/community/file/1166831539721848736), through the `@iconify-json/solar` package
 - **Licence:** [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
 - **Changes:** a selection of the icons, converted to React components that draw in the current text colour. The drawings themselves are unchanged.
+
+## PeakCut
+
+The local clipping processor includes PeakCut, Copyright (c) 2026 PeakCut contributors,
+under the MIT license. Source: https://github.com/haziqahmedqasmi/PeakCut,
+pinned at 44b7c6236b11dc5458148e0905afc3e1a623aeb5. The complete license is retained
+in third_party/peakcut/LICENSE. Bundled font licenses remain in its studio/fonts directory.

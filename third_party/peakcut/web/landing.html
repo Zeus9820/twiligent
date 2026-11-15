@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PeakCut: AI Clip Maker for Twitch, Kick &amp; YouTube Live Streams</title>
+<meta name="description" content="PeakCut clips Twitch, Kick and YouTube live streams while they're still live. AI finds the best moments and turns them into captioned vertical Shorts, Reels and TikToks. Free and open source.">
+<link rel="canonical" href="{{SITE}}/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#FF8B33">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PeakCut">
+<meta property="og:url" content="{{SITE}}/">
+<meta property="og:title" content="PeakCut: clip live streams while they're still live">
+<meta property="og:description" content="AI stream clipper for Twitch, Kick and YouTube. Captioned vertical clips for Shorts, Reels and TikTok. Free and open source, on your own AI key.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PeakCut: clip live streams while they're still live">
+<meta name="twitter:description" content="AI stream clipper for Twitch, Kick and YouTube. Captioned vertical clips. Free and open source.">
+<link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
+<link rel="preload" as="image" href="/brand/demo-hype.jpg" fetchpriority="high">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "PeakCut", "applicationCategory": "MultimediaApplication", "operatingSystem": "Web browser", "url": "{{SITE}}/", "image": "{{SITE}}/brand/logo.svg", "description": "Free, open source AI clip maker that turns Twitch, Kick and YouTube live streams and videos into captioned vertical clips for YouTube Shorts, Instagram Reels and TikTok.", "isAccessibleForFree": true, "featureList": ["Clips live streams while they are live", "AI picks the best moments", "Word-by-word captions", "Vertical 9:16 clips", "Twitch, Kick and YouTube", "Posts to YouTube Shorts and Instagram Reels", "Works with your own AI key"]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "name": "PeakCut", "url": "{{SITE}}/", "logo": "{{SITE}}/brand/logo.svg"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is PeakCut free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. PeakCut is free and open source. You run it on your own computer or server, and there are no plans or fees."}}, {"@type": "Question", "name": "Which AI does it use?", "acceptedAnswer": {"@type": "Answer", "text": "Your own. Add an API key for Gemini, OpenAI, Grok, Claude or OpenRouter, or point it at a local model. Whatever the AI costs is between you and that provider."}}, {"@type": "Question", "name": "What happens without an AI key?", "acceptedAnswer": {"@type": "Answer", "text": "PeakCut still makes clips, picking the loudest moments that have speech in them. Add a key and the AI chooses the moments and writes the hooks and titles."}}, {"@type": "Question", "name": "Which videos work best?", "acceptedAnswer": {"@type": "Answer", "text": "Anything with people talking and reacting: live streams, gaming VODs, podcasts, interviews. Links can be from YouTube, Twitch or Kick, or you can upload a video file. Captions are written from English speech."}}, {"@type": "Question", "name": "How long are the clips, and what shape?", "acceptedAnswer": {"@type": "Answer", "text": "Vertical 9:16, the shape Shorts, Reels and TikTok use. They run 15 to 60 seconds by default and you can set your own range. Choose a blurred fill, a zoomed frame or a centre crop."}}, {"@type": "Question", "name": "Can I change a clip afterwards?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Open any clip to trim the start and end, rewrite the hook and title, or switch caption style and layout, then re-make it."}}, {"@type": "Question", "name": "Can I clip any streamer?", "acceptedAnswer": {"@type": "Answer", "text": "PeakCut is a tool. You are responsible for having the right to clip and post a creator's content; most clipping programs ask you to follow the creator's own rules."}}]}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@300&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add("js")</script>
+<script src="/assets/gradient-ascii.js" defer></script>
+<style>
+:root{--brand:#FF8B33;--brand-hi:#FF9A4C;--ink:#2A1A12;--soft:#FFF2E8;--line-b:#FFD9BC;--deep:#A9480A;
+  --frame:#1E1612;--frame-2:#2C221D;--frame-text:#F4EEEA;--frame-dim:#A99A91;
+  --muted:#F7F4F1;--line:#EEE8E4;--line-2:#E1D9D3;--text:#211813;--dim:#6D6159;--faint:#A0948C;--good:#0F8A57;
+  --r-lg:16px;--r:12px;--r-sm:8px;--ease:cubic-bezier(.2,.7,.2,1);color-scheme:light}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+[id]{scroll-margin-top:88px}
+footer.site{background:#1E1612;color:#B9A597;padding:56px 0 28px;font-size:14px}
+footer.site .fwrap{max-width:1160px;margin:0 auto;padding:0 24px}
+footer.site .fgrid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px}
+footer.site .fbrand img{height:30px;display:block;margin-bottom:14px}
+footer.site .fbrand p{max-width:300px;line-height:1.6;margin:0 0 18px;color:#B9A597}
+footer.site .fbrand a.fcta{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;background:#FF8B33;color:#2A1A12;font-weight:600;text-decoration:none;transition:background-color .15s ease}
+footer.site .fbrand a.fcta:hover{background:#FF9A4C}
+footer.site h4{font-size:13px;font-weight:600;color:#fff;margin:4px 0 14px}
+footer.site ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+footer.site ul a{color:#B9A597;text-decoration:none;transition:color .15s ease}
+footer.site ul a:hover{color:#FF8B33}
+footer.site .fbottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:44px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);font-size:13px;color:#8C7B70}
+@media (max-width:760px){footer.site .fgrid{grid-template-columns:1fr 1fr}footer.site .fbrand{grid-column:1/-1}}
+body{margin:0;background:#fff;color:var(--text);font:16px/1.55 "Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,p{margin:0}
+a{color:inherit}
+svg{width:18px;height:18px;flex:none;fill:currentColor}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:var(--r);border:1px solid var(--line-2);background:#fff;color:var(--text);
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.btn:hover{background:var(--muted);border-color:#D4CAC3}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--ink)}.btn.primary:hover{background:var(--brand-hi);border-color:var(--brand-hi)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}.btn.dark:hover{background:#3A2C25;border-color:#3A2C25}
+.btn.sm{height:38px;padding:0 14px;font-size:14px}
+.kicker{font-size:15px;font-weight:600;color:var(--deep);margin-bottom:12px}
+h2{font-size:clamp(26px,3vw,36px);letter-spacing:-.035em;line-height:1.08;font-weight:600;color:var(--ink)}
+h2 span{color:var(--faint)}
+.sub{color:var(--dim);font-size:16px;margin-top:10px;max-width:600px}
+section{padding:64px 0;position:relative}
+
+/* ---------- motion: things ease in as they scroll into view */
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:var(--d,0s)}
+.js .reveal.in{opacity:1;transform:none}
+
+/* ---------- nav: a solid bar */
+header.nav{position:sticky;top:0;z-index:20;background:#fff;color:var(--text);border-bottom:1px solid transparent;transition:border-color .2s ease}
+header.nav.stuck{border-color:var(--line)}
+header.nav .wrap{display:flex;align-items:center;gap:24px;height:60px;max-width:1180px}
+header.nav img{height:40px;display:block}
+header.nav nav{display:flex;gap:4px;flex:1;justify-content:center;font-size:15px;font-weight:500}
+header.nav nav a{text-decoration:none;color:var(--dim);padding:8px 14px;border-radius:var(--r);transition:color .15s ease,background-color .15s ease}
+header.nav nav a:hover{color:var(--text);background:var(--muted)}
+header.nav .signin{color:var(--text);text-decoration:none;font-weight:500;font-size:15px;padding:8px 12px;border-radius:var(--r);transition:background-color .15s ease}
+header.nav .signin:hover{background:var(--muted)}
+header.nav .btn.cta{height:40px;padding:0 18px;border-radius:999px;font-size:15px}
+
+/* ---------- hero */
+.hero{position:relative;overflow:hidden;background:#fff;padding:28px 0 0}
+.hero-top{position:relative}
+.ga-bg{position:absolute;top:24px;bottom:-256px;left:50%;width:100vw;transform:translateX(-50%);pointer-events:none;user-select:none;z-index:0;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 70%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 70%,transparent 100%)}
+.hero-copy{position:relative;z-index:10;max-width:820px;margin:0 auto;padding:0 24px;text-align:center}
+.announce{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:500;color:var(--text);background:#fff;border:1px solid var(--line-2);
+  padding:6px 8px 6px 14px;border-radius:999px;text-decoration:none;margin-bottom:18px;transition:border-color .15s ease}
+.announce:hover{border-color:#D4CAC3}
+.announce i{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.3s infinite}
+.announce .livepill{padding:3px 10px 3px 9px;font-size:12px}
+.announce .as{display:none}
+@media (max-width:560px){.announce{font-size:12px;gap:8px;padding:5px 12px 5px 6px;max-width:100%}.hero a.announce b{display:none}.hero a.announce .al{display:none}.hero a.announce .as{display:inline}.hero a.announce{white-space:nowrap;font-size:13px;padding:5px 14px 5px 6px}}
+.announce b{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--deep);background:var(--soft);padding:3px 10px;border-radius:999px}
+.announce b svg{width:14px;height:14px}
+@keyframes pulse{50%{opacity:.3}}
+h1{font-size:clamp(30px,3.7vw,46px);line-height:1.08;letter-spacing:-.045em;font-weight:600;color:var(--ink)}
+h1 .hl{display:inline-block;background:var(--brand);color:var(--ink);padding:0 .22em .06em;border-radius:.24em;margin-top:.08em}
+.lede{font-size:16px;color:var(--dim);margin:12px auto 18px;max-width:520px}
+.ask{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.bar{background:#fff;border:1px solid var(--line-2);border-radius:999px;padding:6px;flex:0 1 560px;transition:border-color .2s ease}
+.bar:focus-within{border-color:var(--brand)}
+.bar form{display:flex;gap:6px;align-items:center}
+.bar .in{flex:1;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;min-width:0}
+.bar .in svg{color:var(--faint);width:20px;height:20px}
+.bar input{flex:1;min-width:0;height:46px;border:0;outline:0;font:inherit;font-size:16px;background:transparent;color:var(--text)}
+.bar input::placeholder{color:var(--faint)}
+.bar .btn{height:46px;border-radius:999px}
+.ask .or{color:var(--faint);font-size:15px}
+.ask .up{height:58px;border-radius:999px;padding:0 22px}
+.notes{display:flex;gap:8px 16px;justify-content:center;flex-wrap:wrap;font-size:13px;color:var(--dim);margin-top:12px}
+.notes span{display:inline-flex;align-items:center;gap:6px}.notes svg{width:16px;height:16px;color:var(--good)}
+.reel{position:relative;z-index:1;display:flex;justify-content:center;align-items:flex-end;gap:16px;margin:28px auto 0;padding:0 24px 44px;max-width:820px}
+.reel figure{margin:0;flex:0 1 165px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.reel figure.mid{flex-basis:190px}
+.phone{position:relative;width:100%;aspect-ratio:9/16;border-radius:22px;overflow:hidden;background:var(--frame);border:6px solid var(--frame)}
+.phone video{width:100%;height:100%;object-fit:cover;display:block}
+.phone .snd{position:absolute;right:10px;bottom:10px;width:36px;height:36px;border-radius:50%;border:0;background:rgba(30,22,18,.72);color:#fff;
+  display:grid;place-items:center;cursor:pointer;transition:background-color .15s ease}
+.phone .snd:hover{background:rgba(30,22,18,.92)}
+.reel figcaption{font-size:14px;color:var(--dim);text-align:center}
+.reel figcaption b{color:var(--ink);font-weight:600}
+.reel-note{position:relative;z-index:1;text-align:center;font-size:13px;color:var(--faint);margin:-40px 0 0;padding-bottom:36px}
+.sized{border-top:1px solid var(--line);position:relative;background:#fff}
+.sized p{text-align:center;font-size:13px;color:var(--faint);padding-top:20px}
+.plats{display:flex;justify-content:center;gap:24px 64px;flex-wrap:wrap;padding:24px 24px 26px}
+.plats>div{display:flex;align-items:center;gap:26px;flex-wrap:wrap;justify-content:center}
+.plats p{font-size:14px;color:var(--faint);margin:0;padding:0}
+.plats span{font-size:20px;font-weight:600;color:var(--dim)}
+.marquee{overflow:hidden;padding:10px 0 22px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent)}
+.marquee div{display:flex;gap:64px;width:max-content;animation:slide 26s linear infinite;font-size:20px;font-weight:600;color:var(--dim);white-space:nowrap}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* ---------- open source band */
+.open{background:var(--frame);color:var(--frame-text);padding:56px 0}
+.open h2{color:#fff;max-width:760px}.open h2 span{color:var(--brand)}
+.open .sub{color:var(--frame-dim)}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.1);border-radius:var(--r-lg);overflow:hidden;margin-top:30px}
+.trio div{background:var(--frame);padding:22px 24px}
+.trio b{display:block;font-size:34px;font-weight:600;letter-spacing:-.04em;color:#fff;line-height:1}
+.trio b small{font-size:16px;font-weight:500;color:var(--frame-dim);letter-spacing:0;margin-left:6px}
+.trio span{display:block;color:var(--frame-dim);margin-top:12px;font-size:15px}
+
+/* ---------- how it works */
+.steps{margin-top:36px;position:relative}
+.steps::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+.step{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;padding:20px 0;position:relative}
+.step .no{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--line-2);display:grid;place-items:center;font-size:13px;font-weight:600;color:var(--ink);z-index:1}
+.step:nth-child(even) .txt{order:2}
+.step .txt{max-width:420px}.step:nth-child(odd) .txt{justify-self:end}
+.step h3{font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--ink);margin-bottom:10px}
+.step .txt p{color:var(--dim);font-size:16px}
+.mock{background:#fff;border:1px solid var(--line-2);border-radius:var(--r-lg);padding:18px;max-width:440px;width:100%;font-size:14px}
+.step:nth-child(even) .mock{justify-self:end}
+.field.ph{color:var(--faint)}
+.mock.result{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center}
+.mock.result video{width:150px;aspect-ratio:9/16;border-radius:var(--r);object-fit:cover;background:var(--frame);display:block}
+.acts{display:flex;flex-direction:column;gap:8px}
+.acts span{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:var(--r);border:1px solid var(--line);font-weight:500;color:var(--text)}
+.acts span.pri{background:var(--brand);border-color:var(--brand);color:var(--ink)}
+.mock .lab{font-size:12px;font-weight:600;color:var(--faint);margin-bottom:10px}
+.field{display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r);color:var(--text);margin-bottom:10px}
+.field svg{color:var(--faint)}
+.drop{border:1px dashed var(--line-2);border-radius:var(--r);padding:16px;text-align:center;color:var(--faint);margin-bottom:14px}
+.chips{display:flex;gap:8px;margin-bottom:14px}
+.chips span{flex:1;height:36px;border-radius:var(--r);border:1px solid var(--line);display:grid;place-items:center;font-weight:500;color:var(--dim)}
+.chips span.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.mock .go{height:44px;border-radius:var(--r);background:var(--brand);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600}
+.src{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--r);background:var(--soft);margin-bottom:14px}
+.src i{width:44px;height:44px;border-radius:var(--r-sm);background:linear-gradient(150deg,#f2b36b,#c9652f 55%,#3d1f14);flex:none}
+.src b{display:block;font-weight:600;color:var(--ink)}.src span{font-size:12px;color:var(--dim)}
+.prog{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+.prog div{display:flex;align-items:center;gap:10px;color:var(--faint)}
+.prog div i{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);flex:none;display:grid;place-items:center}
+.in .prog div{animation:tick 6s var(--ease) infinite;animation-delay:calc(var(--i) * .9s)}
+.in .prog div i{animation:tickdot 6s var(--ease) infinite;animation-delay:calc(var(--i) * .9s)}
+@keyframes tick{0%,8%{color:var(--faint)}14%,100%{color:var(--text)}}
+@keyframes tickdot{0%,8%{border-color:var(--line-2);background:transparent}14%,100%{border-color:var(--good);background:var(--good)}}
+.meterbar{height:6px;border-radius:99px;background:var(--muted);overflow:hidden;margin-top:14px}
+.meterbar i{display:block;height:100%;width:0;background:var(--brand);border-radius:99px}
+.in .meterbar i{animation:fillbar 6s var(--ease) infinite}
+@keyframes fillbar{0%{width:4%}75%,100%{width:100%}}
+.cliprow{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.cliprow:first-of-type{border-top:0}
+.cliprow .th{width:46px;aspect-ratio:9/16;border-radius:6px;flex:none}
+.cliprow b{display:block;font-weight:600;color:var(--ink)}
+.cliprow span{font-size:12px;color:var(--dim)}
+.cliprow .sc{margin-left:auto;font-weight:700;font-size:13px;background:var(--brand);color:var(--ink);padding:3px 9px;border-radius:999px}
+.judgebars{border-top:1px solid var(--line);padding-top:12px;margin-top:4px;display:flex;flex-direction:column;gap:9px}
+.jb{display:grid;grid-template-columns:120px 1fr 28px;gap:10px;align-items:center;font-size:12px;color:var(--dim)}
+.jb .t{height:6px;border-radius:99px;background:var(--muted);overflow:hidden}
+.jb .t i{display:block;height:100%;width:0;background:var(--brand);border-radius:99px;transition:width 1.2s var(--ease) .3s}
+.in .jb .t i{width:var(--v)}
+.jb b{color:var(--ink);font-size:12px;text-align:right}
+
+/* ---------- features */
+.bento{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:32px}
+.cell{border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:16px;background:#fff;overflow:hidden}
+.cell h3{font-size:18px;font-weight:600;letter-spacing:-.02em;color:var(--ink);margin-bottom:8px}
+.cell p{color:var(--dim);font-size:15px;max-width:440px}
+.cell .art{margin-top:auto;background:var(--muted);border-radius:var(--r);padding:18px;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.caps{display:flex;gap:10px}
+.caps img{flex:1;min-width:0;aspect-ratio:9/16;object-fit:cover;border-radius:var(--r-sm);display:block;background:var(--frame)}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flow span{flex:1 1 120px;display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;font-weight:600;color:var(--ink);font-size:14px}
+.flow span svg{color:var(--deep)}
+.flow span small{font-weight:400;color:var(--dim);font-size:12px}
+.flow span.hot{background:var(--soft);border-color:var(--line-b)}
+.flow>b{color:var(--faint);font-weight:400}.flow>b svg{width:16px;height:16px}
+.ledger span{display:inline-flex;align-items:center;gap:10px;color:var(--text)}.ledger span svg{color:var(--deep)}
+.caps div{flex:1;aspect-ratio:9/12;border-radius:var(--r-sm);display:grid;place-items:end center;padding-bottom:14px;font-weight:800;font-size:13px;color:#fff;letter-spacing:.2px}
+.caps div b{color:#FFE600}
+.liverow{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim)}
+.livepill{display:inline-flex;align-items:center;gap:6px;background:#E5323F;color:#fff;font-weight:600;font-size:12px;padding:2px 9px;border-radius:999px}
+.livepill i{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.3s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.eq{display:flex;align-items:flex-end;gap:3px;height:52px}
+.eq i{flex:1;background:var(--brand);border-radius:2px;height:20%;animation:eq 1.6s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -.13s)}
+@keyframes eq{to{height:var(--h)}}
+.ledger{display:flex;flex-direction:column;gap:0;font-size:13px}
+.ledger div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line-2);color:var(--dim)}
+.ledger div:first-child{border-top:0}
+.ledger b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.ledger .plus b{color:var(--good)}
+.js .ledger div{opacity:0;transform:translateY(8px);transition:opacity .5s var(--ease),transform .5s var(--ease);transition-delay:calc(var(--i) * .25s + .2s)}
+.js .in .ledger div{opacity:1;transform:none}
+
+/* ---------- built for */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+.tab{height:42px;padding:0 18px;border-radius:999px;border:1px solid var(--line-2);background:#fff;font:inherit;font-weight:500;font-size:15px;color:var(--dim);cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.tab:hover{background:var(--muted);color:var(--text)}
+.tab[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.panel{margin-top:22px;border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;display:grid;grid-template-columns:1.25fr .75fr;gap:36px;align-items:center;animation:fadeup .5s var(--ease)}
+@keyframes fadeup{from{opacity:0;transform:translateY(12px)}}
+.panel .who{font-size:15px;font-weight:600;color:var(--deep);margin-bottom:12px}
+.panel .pain{font-size:20px;line-height:1.3;letter-spacing:-.02em;font-weight:500;color:var(--ink)}
+.panel .fix{color:var(--dim);margin-top:16px;font-size:16px}
+.ft{background:var(--muted);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:14px}
+.ft small{font-size:13px;font-weight:500;color:var(--faint);display:block;margin-bottom:2px}
+.ft b{font-weight:600;color:var(--ink);font-size:17px}
+.ft .arrow{color:var(--brand)}
+
+/* ---------- faq + closing */
+.faqgrid{display:grid;grid-template-columns:.8fr 1.2fr;gap:40px}
+details{border-top:1px solid var(--line);padding:14px 0}
+details:last-child{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600;font-size:16px;color:var(--ink);list-style:none;display:flex;justify-content:space-between;gap:14px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--faint);font-weight:400;font-size:24px;line-height:1;transition:transform .25s var(--ease)}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--dim);margin-top:12px;font-size:16px}
+.closing{text-align:center;background:radial-gradient(ellipse 70% 90% at 50% 100%,#FFEBDA 0%,#FFF8F2 55%,#fff 85%);border-top:1px solid var(--line)}
+.closing h2{margin:0 auto;max-width:720px}.closing .sub{margin:10px auto 24px}
+
+
+
+
+
+@media (max-width:960px){
+  .hero{padding-top:32px}.reel{gap:10px;margin-top:28px}.reel figure:not(.mid){flex-basis:150px}
+  header.nav nav{display:none}header.nav .wrap{justify-content:space-between}
+  section{padding:48px 0}.open{padding:44px 0}
+  .trio,.bento,.faqgrid,.panel{grid-template-columns:1fr}.faqgrid{gap:24px}.panel{padding:26px;gap:24px}
+  .steps::before{left:20px}.step{grid-template-columns:1fr;gap:20px;padding:26px 0 26px 56px}
+  .step .no{left:20px;top:26px;transform:translateX(-50%)}
+  .step:nth-child(even) .txt{order:0}.step .txt,.step:nth-child(odd) .txt{justify-self:start;max-width:none}.step:nth-child(even) .mock{justify-self:start}
+}
+@media (max-width:560px){.bar{border-radius:var(--r-lg);flex-basis:100%}.bar form{flex-direction:column;align-items:stretch}.bar .btn{width:100%;border-radius:var(--r)}.ask .or{display:none}.ask .up{width:100%;height:50px}header.nav .signin{display:none}.reel figure:not(.mid){display:none}.reel figure.mid{flex-basis:260px}.mock.result{grid-template-columns:110px 1fr}.mock.result video{width:110px}.trio b{font-size:36px}.notes span+span::before{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}.js .reveal,.js .ledger div{opacity:1;transform:none}.jb .t i{width:var(--v)}.meterbar i{width:70%}}
+</style>
+</head>
+<body>
+<header class="nav" id="nav"><div class="wrap">
+  <a href="/" aria-label="PeakCut home"><img src="/brand/logo.svg" alt="PeakCut"></a>
+  <nav aria-label="Sections"><a href="#how">How it works</a><a href="#features">Features</a><a href="#open">Open source</a><a href="#for">Who it's for</a><a href="#faq">FAQ</a></nav>
+  <a class="signin" href="/login" data-auth="in">Sign in</a>
+  <a class="btn primary cta" href="/signup" data-auth="up">Sign up</a>
+</div></header>
+
+<main>
+<div class="hero">
+  <div class="hero-top"><div class="ga-bg" id="heroAscii" aria-hidden="true"></div>
+  <div class="hero-copy">
+    <a class="announce reveal" href="#live"><span class="livepill"><i></i>Live</span><span class="al">Clips YouTube, Twitch and Kick streams as they happen</span><span class="as">Clips streams as they happen</span> <b>See how <svg viewBox="0 0 256 256" aria-hidden="true"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></svg></b></a>
+    <h1 class="reveal" style="--d:.05s">Clip live streams <span class="hl">while they are still live</span></h1>
+    <p class="lede reveal" style="--d:.12s">Add a streamer once. PeakCut records the stream, finds the best moments and hands you captioned vertical clips while it is still live. Replays work too.</p>
+    <div class="ask reveal" style="--d:.2s"><div class="bar"><form class="linkform">
+      <label class="in"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M165.66,90.34a8,8,0,0,1,0,11.32l-64,64a8,8,0,0,1-11.32-11.32l64-64A8,8,0,0,1,165.66,90.34ZM215.6,40.4a56,56,0,0,0-79.2,0L106.34,70.45a8,8,0,0,0,11.32,11.32l30.06-30a40,40,0,0,1,56.57,56.56l-30.07,30.06a8,8,0,0,0,11.31,11.32L215.6,119.6a56,56,0,0,0,0-79.2ZM138.34,174.22l-30.06,30.06a40,40,0,1,1-56.56-56.57l30.05-30.05a8,8,0,0,0-11.32-11.32L40.4,136.4a56,56,0,0,0,79.2,79.2l30.06-30.07a8,8,0,0,0-11.32-11.31Z"/></svg><input name="link" type="url" inputmode="url" placeholder="Paste a YouTube, Twitch or Kick link" autocomplete="off" aria-label="Video link"></label>
+      <button class="btn primary">Get clips <svg viewBox="0 0 256 256" aria-hidden="true"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></svg></button></form></div>
+      <span class="or">or</span><a class="btn up" href="/signup" data-auth="up2"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/></svg>Upload a video</a></div>
+    <div class="notes reveal" style="--d:.28s"><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg><span>Free and open source</span></span><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>Uses your own AI key</span><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>Runs on your own server</span></div>
+  </div></div>
+  <div class="reel">
+    <figure class="reveal" style="--d:.1s"><div class="phone"><video src="/brand/demo-bounce.mp4" poster="/brand/demo-bounce.jpg" autoplay muted loop playsinline preload="metadata"></video></div><figcaption><b>Bounce</b><br>caption style</figcaption></figure>
+    <figure class="mid reveal" style="--d:.18s"><div class="phone"><video src="/brand/demo-hype.mp4" poster="/brand/demo-hype.jpg" autoplay muted loop playsinline preload="metadata"></video></div><figcaption><b>Hype</b><br>caption style</figcaption></figure>
+    <figure class="reveal" style="--d:.26s"><div class="phone"><video src="/brand/demo-clean.mp4" poster="/brand/demo-clean.jpg" autoplay muted loop playsinline preload="metadata"></video></div><figcaption><b>Clean</b><br>caption style</figcaption></figure>
+  </div>
+  <p class="reel-note">The three caption styles, rendered by PeakCut itself.</p>
+</div>
+<div class="sized"><div class="plats">
+    <div><p>Clips from</p><span>YouTube</span><span>Twitch</span><span>Kick</span><span>Your own video files</span></div>
+    <div><p>Posts straight to</p><span>YouTube Shorts</span><span>Instagram Reels</span></div>
+  </div></div>
+
+<section class="open" id="open"><div class="wrap">
+  <p class="kicker reveal" style="color:var(--brand)">Open source</p>
+  <h2 class="reveal">Free to use. <span>Runs on your own machine, with your own AI key.</span></h2>
+  <p class="sub reveal">PeakCut is free and open source. Install it on your computer or a server, add an API key for the AI you like, and every feature is yours: no plans, no seats and no limits.</p>
+  <div class="trio reveal">
+    <div><b>Free<small>and open source</small></b><span>Read the code, change it, host it yourself.</span></div>
+    <div><b>Your key<small>any AI you like</small></b><span>Gemini, OpenAI, Grok, Claude, OpenRouter, or a local model.</span></div>
+    <div><b>Your server<small>your data</small></b><span>Speech is transcribed on your own machine. Videos and clips stay there.</span></div>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <p class="kicker reveal">How it works</p>
+  <h2 class="reveal">Three steps from a stream <span>to a folder of clips.</span></h2>
+  <div class="steps">
+    <div class="step reveal"><span class="no">01</span>
+      <div class="txt"><h3>Paste a link, upload, or add a streamer</h3><p>Drop in a YouTube, Twitch or Kick link, or upload a video file. For live streams, add the streamer's channel once and PeakCut records when they go live. Pick a caption style and how long clips should be.</p></div>
+      <div class="mock" aria-hidden="true"><div class="lab">Video to clips</div>
+        <div class="field ph"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M165.66,90.34a8,8,0,0,1,0,11.32l-64,64a8,8,0,0,1-11.32-11.32l64-64A8,8,0,0,1,165.66,90.34ZM215.6,40.4a56,56,0,0,0-79.2,0L106.34,70.45a8,8,0,0,0,11.32,11.32l30.06-30a40,40,0,0,1,56.57,56.56l-30.07,30.06a8,8,0,0,0,11.31,11.32L215.6,119.6a56,56,0,0,0,0-79.2ZM138.34,174.22l-30.06,30.06a40,40,0,1,1-56.56-56.57l30.05-30.05a8,8,0,0,0-11.32-11.32L40.4,136.4a56,56,0,0,0,79.2,79.2l30.06-30.07a8,8,0,0,0-11.32-11.31Z"/></svg>Paste a YouTube, Twitch or Kick link</div>
+        <div class="drop"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/></svg> Or upload your video</div>
+        <div class="lab">Caption style</div>
+        <div class="chips"><span class="on">Bounce</span><span>Hype</span><span>Clean</span></div>
+        <div class="go"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M157.73,113.13A8,8,0,0,1,159.82,102L227.48,55.7a8,8,0,0,1,9,13.21l-67.67,46.3a7.92,7.92,0,0,1-4.51,1.4A8,8,0,0,1,157.73,113.13Zm80.87,85.09a8,8,0,0,1-11.12,2.08L136,137.7,93.49,166.78a36,36,0,1,1-9-13.19L121.83,128,84.44,102.41a35.86,35.86,0,1,1,9-13.19l143,97.87A8,8,0,0,1,238.6,198.22ZM80,180a20,20,0,1,0-5.86,14.14A19.85,19.85,0,0,0,80,180ZM74.14,90.13a20,20,0,1,0-28.28,0A19.85,19.85,0,0,0,74.14,90.13Z"/></svg>Make clips</div></div></div>
+    <div class="step reveal"><span class="no">02</span>
+      <div class="txt"><h3>The AI finds the moments</h3><p>The whole recording is transcribed, the strongest moments are picked and scored, and each one is cut into a vertical clip with captions timed to the voice. A 15-minute video takes about two minutes. Long streams hand over their first clips after about two.</p></div>
+      <div class="mock" aria-hidden="true"><div class="lab">Making your clips</div>
+        <div class="prog"><div style="--i:0"><i></i>Getting the audio</div><div style="--i:1"><i></i>Writing the transcript</div><div style="--i:2"><i></i>Finding the best moments</div><div style="--i:3"><i></i>Making the clips</div></div>
+        <div class="meterbar"><i></i></div></div></div>
+    <div class="step reveal"><span class="no">03</span>
+      <div class="txt"><h3>Download, post, or keep editing</h3><p>Every clip arrives captioned, scored, and with a hook, title, description and hashtags written for it. Trim it, change the style, download it, or queue it to post. Each video keeps its own set of clips to come back to.</p></div>
+      <div class="mock result"><video src="/brand/demo-bounce.mp4" poster="/brand/demo-bounce.jpg" muted loop playsinline preload="none" class="lazyplay" aria-label="A clip made by PeakCut"></video>
+        <div class="acts"><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></svg>Download</span><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg>Copy post text</span><span class="pri"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M227.32,28.68a16,16,0,0,0-15.66-4.08l-.15,0L19.57,82.84a16,16,0,0,0-2.49,29.8L102,154l41.3,84.87A15.86,15.86,0,0,0,157.74,248q.69,0,1.38-.06a15.88,15.88,0,0,0,14-11.51l58.2-191.94c0-.05,0-.1,0-.15A16,16,0,0,0,227.32,28.68ZM157.83,231.85l-.05.14,0-.07-40.06-82.3,48-48a8,8,0,0,0-11.31-11.31l-48,48L24.08,98.25l-.07,0,.14,0L216,40Z"/></svg>Post</span></div></div></div>
+  </div>
+</div></section>
+
+<section id="features" style="padding-top:0"><div class="wrap">
+  <p class="kicker reveal">Features</p>
+  <h2 class="reveal">The parts of clipping <span>that eat your week.</span></h2>
+  <div class="bento">
+    <div class="cell reveal"><div><h3>Scored by two separate judges</h3><p>One AI reads only what was said. Another sees only how loud the streamer got and how busy chat was. During a live stream, a clip is made when both agree, so you get moments, not filler.</p></div>
+      <div class="art"><div class="flow"><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,88h80v80H40Zm96-16V56h32V72Zm-16,0H88V56h32Zm0,112v16H88V184Zm16,0h32v16H136Zm0-16V88h80v80Zm80-96H184V56h32ZM72,56V72H40V56ZM40,184H72v16H40Zm176,16H184V184h32v16Z"/></svg>Words judge<small>reads what was said</small></span><b>+</b><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></svg>Reaction judge<small>loudness and chat</small></span><b><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></svg></b><span class="hot"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M157.73,113.13A8,8,0,0,1,159.82,102L227.48,55.7a8,8,0,0,1,9,13.21l-67.67,46.3a7.92,7.92,0,0,1-4.51,1.4A8,8,0,0,1,157.73,113.13Zm80.87,85.09a8,8,0,0,1-11.12,2.08L136,137.7,93.49,166.78a36,36,0,1,1-9-13.19L121.83,128,84.44,102.41a35.86,35.86,0,1,1,9-13.19l143,97.87A8,8,0,0,1,238.6,198.22ZM80,180a20,20,0,1,0-5.86,14.14A19.85,19.85,0,0,0,80,180ZM74.14,90.13a20,20,0,1,0-28.28,0A19.85,19.85,0,0,0,74.14,90.13Z"/></svg>Clip<small>when both agree</small></span></div></div></div>
+    <div class="cell reveal" style="--d:.08s"><div><h3>Captions, styled once</h3><p>Word-by-word captions are burned into every clip, with the key words highlighted and a hook line on top. Pick one of three styles per creator and every clip follows it.</p></div>
+      <div class="art"><div class="caps"><img src="/brand/demo-bounce.jpg" alt="A clip with captions made by PeakCut" loading="lazy"><img src="/brand/demo-hype.jpg" alt="A clip with captions made by PeakCut" loading="lazy"><img src="/brand/demo-clean.jpg" alt="A clip with captions made by PeakCut" loading="lazy"></div></div></div>
+    <div class="cell reveal" id="live"><div><h3>Clips while they are still live</h3><p>Add a streamer's channel and PeakCut can start recording by itself when they go live. It keeps the last stretch of stream, checks it as often as every minute, and has clips ready before the stream ends.</p></div>
+      <div class="art"><div class="liverow"><span class="livepill"><i></i>Live</span>Records the stream and checks it as often as every minute</div><div class="eq"><i style="--i:0;--h:30%"></i><i style="--i:1;--h:67%"></i><i style="--i:2;--h:34%"></i><i style="--i:3;--h:71%"></i><i style="--i:4;--h:38%"></i><i style="--i:5;--h:75%"></i><i style="--i:6;--h:42%"></i><i style="--i:7;--h:79%"></i><i style="--i:8;--h:46%"></i><i style="--i:9;--h:83%"></i><i style="--i:10;--h:50%"></i><i style="--i:11;--h:87%"></i><i style="--i:12;--h:54%"></i><i style="--i:13;--h:91%"></i><i style="--i:14;--h:58%"></i><i style="--i:15;--h:95%"></i><i style="--i:16;--h:62%"></i><i style="--i:17;--h:99%"></i><i style="--i:18;--h:66%"></i><i style="--i:19;--h:33%"></i><i style="--i:20;--h:70%"></i><i style="--i:21;--h:37%"></i><i style="--i:22;--h:74%"></i><i style="--i:23;--h:41%"></i><i style="--i:24;--h:78%"></i><i style="--i:25;--h:45%"></i><i style="--i:26;--h:82%"></i><i style="--i:27;--h:49%"></i></div></div></div>
+    <div class="cell reveal" style="--d:.08s"><div><h3>Every AI call accounted for</h3><p>Each time the AI works it is listed under one of these, with the creator, the video and the tokens used, so you always know what your key is doing.</p></div>
+      <div class="art"><div class="ledger"><div style="--i:0"><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,88h80v80H40Zm96-16V56h32V72Zm-16,0H88V56h32Zm0,112v16H88V184Zm16,0h32v16H136Zm0-16V88h80v80Zm80-96H184V56h32ZM72,56V72H40V56ZM40,184H72v16H40Zm176,16H184V184h32v16Z"/></svg>Video: finding clips</span></div><div style="--i:1"><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></svg>Live: words judge</span></div><div style="--i:2"><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M128,88a40,40,0,1,0,40,40A40,40,0,0,0,128,88Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,152Zm73.71,7.14a80,80,0,0,1-14.08,22.2,8,8,0,0,1-11.92-10.67,63.95,63.95,0,0,0,0-85.33,8,8,0,1,1,11.92-10.67,80.08,80.08,0,0,1,14.08,84.47ZM69,103.09a64,64,0,0,0,11.26,67.58,8,8,0,0,1-11.92,10.67,79.93,79.93,0,0,1,0-106.67A8,8,0,1,1,80.29,85.34,63.77,63.77,0,0,0,69,103.09ZM248,128a119.58,119.58,0,0,1-34.29,84,8,8,0,1,1-11.42-11.2,103.9,103.9,0,0,0,0-145.56A8,8,0,1,1,213.71,44,119.58,119.58,0,0,1,248,128ZM53.71,200.78A8,8,0,1,1,42.29,212a119.87,119.87,0,0,1,0-168,8,8,0,1,1,11.42,11.2,103.9,103.9,0,0,0,0,145.56Z"/></svg>Live: reaction judge</span></div><div style="--i:3"><span><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M215.79,118.17a8,8,0,0,0-5-5.66L153.18,90.9l14.66-73.33a8,8,0,0,0-13.69-7l-112,120a8,8,0,0,0,3,13l57.63,21.61L88.16,238.43a8,8,0,0,0,13.69,7l112-120A8,8,0,0,0,215.79,118.17ZM109.37,214l10.47-52.38a8,8,0,0,0-5-9.06L62,132.71l84.62-90.66L136.16,94.43a8,8,0,0,0,5,9.06l52.8,19.8Z"/></svg>Hand clip: title and hook</span></div></div></div></div>
+  </div>
+</div></section>
+
+<section id="for" style="padding-top:0"><div class="wrap">
+  <h2 class="reveal">Built for anyone with long footage <span>and no time to cut it.</span></h2>
+  <div class="tabs reveal" role="tablist" aria-label="Who PeakCut is for" id="tabs"></div>
+  <div class="panel" id="panel" role="tabpanel"></div>
+</div></section>
+
+<section id="faq" style="padding-top:0"><div class="wrap faqgrid">
+  <div class="reveal"><p class="kicker">FAQ</p><h2>Got any <span>questions left?</span></h2><p class="sub">The things people ask before they run their first stream through PeakCut.</p></div>
+  <div class="reveal" style="--d:.08s">
+    <details open><summary>Is PeakCut free?</summary><p>Yes. PeakCut is free and open source. You run it on your own computer or server, and there are no plans or fees.</p></details>
+    <details><summary>Which AI does it use?</summary><p>Your own. Add an API key for Gemini, OpenAI, Grok, Claude or OpenRouter, or point it at a local model. Whatever the AI costs is between you and that provider.</p></details>
+    <details><summary>What happens without an AI key?</summary><p>PeakCut still makes clips, picking the loudest moments that have speech in them. Add a key and the AI chooses the moments and writes the hooks and titles.</p></details>
+    <details><summary>Which videos work best?</summary><p>Anything with people talking and reacting: live streams, gaming VODs, podcasts, interviews. Links can be from YouTube, Twitch or Kick, or you can upload a video file. Captions are written from English speech.</p></details>
+    <details><summary>How long are the clips, and what shape?</summary><p>Vertical 9:16, the shape Shorts, Reels and TikTok use. They run 15 to 60 seconds by default and you can set your own range. Choose a blurred fill, a zoomed frame or a centre crop.</p></details>
+    <details><summary>Can I change a clip afterwards?</summary><p>Yes. Open any clip to trim the start and end, rewrite the hook and title, or switch caption style and layout, then re-make it.</p></details>
+    <details><summary>Can I clip any streamer?</summary><p>PeakCut is a tool. You are responsible for having the right to clip and post a creator's content; most clipping programs ask you to follow the creator's own rules.</p></details>
+  </div>
+</div></section>
+
+<section class="closing"><div class="wrap">
+  <h2 class="reveal">Your last stream is a week of clips.</h2>
+  <p class="sub reveal">Paste the link and see what the AI picks. Free and open source, on your own AI key.</p>
+  <div class="reveal"><div class="bar"><form class="linkform">
+      <label class="in"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M165.66,90.34a8,8,0,0,1,0,11.32l-64,64a8,8,0,0,1-11.32-11.32l64-64A8,8,0,0,1,165.66,90.34ZM215.6,40.4a56,56,0,0,0-79.2,0L106.34,70.45a8,8,0,0,0,11.32,11.32l30.06-30a40,40,0,0,1,56.57,56.56l-30.07,30.06a8,8,0,0,0,11.31,11.32L215.6,119.6a56,56,0,0,0,0-79.2ZM138.34,174.22l-30.06,30.06a40,40,0,1,1-56.56-56.57l30.05-30.05a8,8,0,0,0-11.32-11.32L40.4,136.4a56,56,0,0,0,79.2,79.2l30.06-30.07a8,8,0,0,0-11.32-11.31Z"/></svg><input name="link" type="url" inputmode="url" placeholder="Paste a YouTube, Twitch or Kick link" autocomplete="off" aria-label="Video link"></label>
+      <button class="btn primary">Get clips <svg viewBox="0 0 256 256" aria-hidden="true"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></svg></button></form></div></div>
+</div></section>
+</main>
+
+<footer class="site"><div class="fwrap">
+  <div class="fgrid">
+    <div class="fbrand"><a href="/" aria-label="PeakCut home"><img src="/brand/logo-light.svg" alt="PeakCut" width="120" height="30"></a>
+      <p>AI clipping for Twitch, Kick and YouTube streams. Captioned vertical clips while the stream is still live. Free and open source.</p>
+      <a class="fcta" href="/signup">Sign up</a></div>
+    <div><h4>Product</h4><ul><li><a href="/#how">How it works</a></li><li><a href="/#features">Features</a></li><li><a href="/#live">Live clipping</a></li><li><a href="/#open">Open source</a></li><li><a href="/#faq">FAQ</a></li></ul></div>
+    <div><h4>Get started</h4><ul><li><a href="/signup">Create an account</a></li><li><a href="/login">Sign in</a></li><li><a href="/reset">Reset password</a></li></ul></div>
+    <div><h4>Legal</h4><ul><li><a href="/terms">Terms of Service</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/acceptable-use">Acceptable Use</a></li></ul></div>
+  </div>
+  <div class="fbottom"><span>© <span class="fy"></span> PeakCut</span><span>Free and open source.</span></div>
+</div></footer>
+<script>document.querySelectorAll(".fy").forEach(e => e.textContent = new Date().getFullYear());</script>
+
+<script>
+const _y = document.getElementById("year"); if (_y) _y.textContent = new Date().getFullYear();
+const navEl = document.getElementById("nav");
+addEventListener("scroll", () => navEl.classList.toggle("stuck", scrollY > 4), {passive:true});
+const startAscii = () => { try { GradientASCII(document.getElementById("heroAscii"), {colors: ["#ffb27a", "#ffffff", "#ffd2ae", "#ffe0c2", "#fff1e6"], shape: "horizon", lightMode: true, cellSize: 16, density: 0.8, glyphOpacity: 0.26, gradientOpacity: 0.32, glow: 0.06, grain: 0.06, mouseInteraction: false, clickEffect: "none"}); } catch {} };
+window.GradientASCII ? startAscii() : addEventListener("load", startAscii, {once:true});
+try {
+  const lz = new IntersectionObserver(es => es.forEach(e => { const v = e.target; if (e.isIntersecting) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause(); }), {threshold:.4});
+  document.querySelectorAll("video.lazyplay").forEach(v => lz.observe(v));
+} catch {}
+const $$ = s => [...document.querySelectorAll(s)];
+// things ease in as they scroll into view. Checked on scroll, on a timer and by an observer, so a section can
+// never stay invisible if one of those is not available.
+let waiting = $$(".reveal");
+function check() {
+  const h = innerHeight || document.documentElement.clientHeight;
+  waiting = waiting.filter(e => { if (e.getBoundingClientRect().top < h * .92) { e.classList.add("in"); return false; } return true; });
+}
+addEventListener("scroll", check, {passive:true}); addEventListener("resize", check); addEventListener("load", check);
+const timer = setInterval(() => { check(); if (!waiting.length) clearInterval(timer); }, 400);
+try { const io = new IntersectionObserver(check, {threshold:[0, .1]}); waiting.forEach(e => io.observe(e)); } catch {}
+check();
+
+
+// who it's for
+const WHO = [
+  ["Clippers", "A streamer is live for six hours and the campaign pays per view. The clip that wins is the one posted first.", "PeakCut records the stream, checks it as often as every minute and has captioned clips ready while the stream is still going. You pick, post and move to the next creator.", "Six-hour live streams", "Clips ready before it ends"],
+  ["Streamers", "The best moment of a four-hour stream is somewhere in the VOD. Finding it the next morning is the job nobody wants.", "Paste the link. The moments with the strongest hooks and reactions come back cut, captioned and ranked, ready for Shorts and Reels while the stream is still fresh.", "Multi-hour VODs", "Highlights ranked by score"],
+  ["Podcasters", "Ninety minutes recorded, two clips posted. The rest of the episode never leaves the feed it was published in.", "Every episode comes back as a set of captioned vertical clips, each scored, so the week's posts are chosen in a minute instead of an afternoon of scrubbing.", "60 to 120 minute episodes", "A scored set of clips per episode"],
+  ["Agencies", "Ten creators, ten streams a week, one editor. Clipping is what every client asks for and the thing that does not scale.", "Give each creator their own workspace with its own style and posting rules. One server looks after all of them.", "Client streams and recordings", "A workspace of clips per client"],
+  ["Marketing teams", "Webinars and product demos are recorded, filed and forgotten. Turning them into social content never makes it onto a sprint.", "The recording goes in the same afternoon and a set of captioned clips comes out, each with a title and description already written.", "Webinars and demos", "Social clips, the same afternoon"]];
+const tabs = document.getElementById("tabs"), panel = document.getElementById("panel");
+const esc = s => s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function show(i) {
+  tabs.innerHTML = WHO.map((w, n) => `<button class="tab" role="tab" aria-selected="${n === i}" data-i="${n}">${esc(w[0])}</button>`).join("");
+  const w = WHO[i];
+  panel.style.animation = "none"; panel.offsetWidth; panel.style.animation = "";
+  panel.innerHTML = `<div><p class="who">${esc(w[0])}</p><p class="pain">${esc(w[1])}</p><p class="fix">${esc(w[2])}</p></div>
+    <div class="ft"><div><small>From</small><b>${esc(w[3])}</b></div><div class="arrow"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></svg></div><div><small>To</small><b>${esc(w[4])}</b></div></div>`;
+}
+tabs.addEventListener("click", e => { const b = e.target.closest(".tab"); if (b) show(Number(b.dataset.i)); });
+show(0);
+
+// the link bar: remember the link, then sign up (or go straight in if already signed in)
+let signedIn = false;
+$$(".linkform").forEach(f => f.addEventListener("submit", e => {
+  e.preventDefault();
+  const v = f.link.value.trim();
+  try { if (v) sessionStorage.setItem("peakcut_link", v); } catch {}
+  location.href = signedIn ? "/app" : "/signup";
+}));
+
+fetch("/api/auth/me").then(r => r.json()).then(d => {
+  if (!d.user) return;
+  signedIn = true;
+  $$('[data-auth="in"]').forEach(e => e.remove());
+  $$('[data-auth="up"]').forEach(e => { e.href = "/app"; e.textContent = "Open PeakCut"; });
+  $$('[data-auth="up2"]').forEach(e => { e.href = "/app"; });
+}).catch(() => {});
+</script>
+</body>
+</html>

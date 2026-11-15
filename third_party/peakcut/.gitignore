@@ -1,0 +1,31 @@
+# ---- never publish: settings, keys and anything users made
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*service-account*.json
+*client_secret*.json
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite*
+*.log
+
+# ---- this computer only
+.claude/
+CLAUDE.local.md
+.vscode/
+.idea/
+*.bat
+Thumbs.db
+.DS_Store
+
+# ---- Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/

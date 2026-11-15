@@ -1,3 +1,4 @@
+import { clippingPublicRoutes, clippingRoutes } from './clippingRoutes.ts';
 import aiRoutes from './aiRoutes.ts';
 import { Hono } from 'hono';
 import accountRoutes from './accountRoutes.ts';
@@ -26,13 +27,14 @@ publicRoutes.get('/health', ...getHealth);
 publicRoutes.get('/health/ready', ...getReadiness);
 publicRoutes.get('/auth/instagram/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleInstagramCallback);
 publicRoutes.get('/auth/youtube/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleYouTubeStudioCallback);
+publicRoutes.route('/', clippingPublicRoutes);
 publicRoutes.route('/', authHookRoutes);
 publicRoutes.route('/', instagramWebhookRoutes);
 
 // mounted behind requireAuth and the per-user rate limits in app.ts
 export const protectedRoutes = new Hono<AppEnv>();
 for (const routes of [
-    aiRoutes, accountRoutes, analyticsRoutes, redditRoutes, publishingRoutes, scheduledPostRoutes, trackedContentRoutes,
+    clippingRoutes, aiRoutes, accountRoutes, analyticsRoutes, redditRoutes, publishingRoutes, scheduledPostRoutes, trackedContentRoutes,
     overviewRoutes, settingsRoutes, instagramAuthRoutes, automationRoutes,
 ]) {
     protectedRoutes.route('/', routes);

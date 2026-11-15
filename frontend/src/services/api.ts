@@ -1,3 +1,4 @@
+import type { ClipJob, ClipOptions, ClippingDashboard } from '@shared/types/clipping.ts';
 import { supabase } from '../lib/supabase';
 import { failureMessage } from '../lib/apiErrors.ts';
 import type {
@@ -262,6 +263,20 @@ async function uploadImage(file: File, config: MediaStorageConfig): Promise<stri
 
 export interface ManagedVideo { id: string; title: string; description: string; privacyStatus: string }
 export const api = {
+    getClipping: () => request<ClippingDashboard>('/clipping'),
+    getClippingJob: (id: string) => request<{ job: ClipJob }>(`/clipping/jobs/${id}`),
+    pairClipProcessor: (code: string) => request<{ success: true }>('/clipping/processors/pair', { method: 'POST', body: JSON.stringify({ code }) }),
+    disconnectClipProcessor: (id: string) => request<{ success: true }>(`/clipping/processors/${id}`, { method: 'DELETE' }),
+    createClipJob: (input: { id: string; name: string; source: ClipJob['source']; options: ClipOptions }) => request<{ job: ClipJob }>('/clipping/jobs', { method: 'POST', body: JSON.stringify(input) }),
+    cancelClipJob: (id: string) => request<{ success: true }>(`/clipping/jobs/${id}/cancel`, { method: 'POST' }),
+    retryClipJob: (id: string) => request<{ success: true }>(`/clipping/jobs/${id}/retry`, { method: 'POST' }),
+    downloadClip: async (id: string, clipId: string): Promise<Blob> => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Sign in before downloading a clip.');
+        const response = await fetch(`${API}/clipping/jobs/${id}/clips/${clipId}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+        if (!response.ok) throw new Error('The clip could not be downloaded. Try again.');
+        return response.blob();
+    },
     getIGAccountViews: (id: string, start: string, end: string) => request<{ views: number | null; start: string; end: string; timezone: string; fetchedAt: string; source: string }>(`/accounts/${encodeURIComponent(id)}/ig-account-views?start=${start}&end=${end}`),
     analyzePerformance: (id: string, videoIds?: string[]) => request<{ analysis: string; model: string; facts: { fetchedAt: string; videoCount: number; totalViews: number }; evidence: unknown; generatedAt: string }>(`/accounts/${encodeURIComponent(id)}/ai-analysis`, { method: 'POST', body: JSON.stringify({ videoIds }) }),
     generateMetadata: (context: string, frames?: Array<{ time: number; image: string }>) => request<{ title: string; description: string; summary?: string; titles?: string[] }>('/ai/metadata', { method: 'POST', body: JSON.stringify({ context, frames }) }),

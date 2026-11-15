@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in to PeakCut</title>
+<meta name="description" content="Sign in or create your PeakCut account.">
+<link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#FF8B33;--brand-hi:#FF9A4C;--ink:#2A1A12;--soft:#FFF2E8;--line-b:#FFD9BC;--deep:#A9480A;
+  --frame:#1E1612;--frame-2:#2C221D;--frame-text:#F4EEEA;--frame-dim:#A99A91;
+  --muted:#F7F4F1;--line:#EEE8E4;--line-2:#E1D9D3;--text:#211813;--dim:#6D6159;--faint:#A0948C;--bad:#D3343F;--bad-soft:#FDECEE;
+  --r-lg:16px;--r:12px;--r-sm:8px;color-scheme:light}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;color:var(--text);font:16px/1.55 "Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+a{color:inherit}
+svg{width:18px;height:18px;flex:none;fill:currentColor}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:var(--r);border:1px solid var(--line-2);background:#fff;color:var(--text);
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.btn:hover{background:var(--muted);border-color:#D4CAC3}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--ink)}
+.btn.primary:hover{background:var(--brand-hi);border-color:var(--brand-hi)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}.btn.dark:hover{background:#3A2C25;border-color:#3A2C25}
+.btn.sm{height:38px;padding:0 14px;font-size:14px}
+.btn.lg{height:52px;padding:0 26px;font-size:16px}
+.btn:disabled{opacity:.5;cursor:default}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+body{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);background:var(--frame)}
+.side{color:var(--frame-text);padding:40px 48px;display:flex;flex-direction:column;justify-content:space-between;min-height:100vh}
+.side img{height:38px}
+.side h1{font-size:clamp(30px,3.2vw,42px);line-height:1.1;letter-spacing:-.03em;font-weight:700;color:#fff;max-width:440px}
+.side h1 em{font-style:normal;color:var(--brand)}
+.side ul{list-style:none;padding:0;margin:28px 0 0;display:flex;flex-direction:column;gap:14px;color:var(--frame-dim);font-size:16px}
+.side li{display:flex;gap:12px;align-items:flex-start}.side li svg{color:var(--brand);margin-top:3px}
+.side small{color:var(--frame-dim);font-size:13px}
+.main{background:#fff;margin:8px 8px 8px 0;border-radius:var(--r-lg);display:grid;place-items:center;padding:32px 20px}
+.card{width:100%;max-width:400px}
+.card h2{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--ink)}
+.card>p{color:var(--dim);margin:8px 0 26px}
+form{display:flex;flex-direction:column;gap:16px}
+label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:600;color:var(--dim)}
+input{height:46px;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:#fff;font:inherit;color:var(--text);outline:none;transition:border-color .15s ease,background-color .15s ease}
+input:hover{border-color:#D4CAC3}input:focus{border-color:var(--brand);background:#fff}
+input:focus-visible{outline:none}
+input::placeholder{color:var(--faint)}
+.btn{width:100%;height:48px}
+.or{display:flex;align-items:center;gap:14px;color:var(--faint);font-size:13px;margin:20px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.err{display:none;background:var(--bad-soft);color:var(--bad);padding:11px 14px;border-radius:var(--r);font-size:14px;font-weight:500}
+.err.on{display:block}
+.swap{margin-top:22px;text-align:center;color:var(--dim);font-size:15px}
+.swap a{color:var(--deep);font-weight:600;text-decoration:none}.swap a:hover{text-decoration:underline}
+.hint{font-size:13px;color:var(--faint);font-weight:400}
+.pwrow{display:flex;justify-content:space-between;align-items:baseline}
+.pwbox{position:relative;display:block}
+.pwbox input{width:100%;padding-right:48px}
+.pwbox button{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:var(--faint);display:grid;place-items:center;cursor:pointer;transition:color .15s ease,background-color .15s ease}
+.pwbox button:hover{color:var(--text);background:var(--muted, #F7F4F1)}
+.pwbox button svg{width:18px;height:18px;fill:currentColor}
+.pwbox button[aria-pressed=true]{color:var(--deep)}
+.pwrow a{font-size:13px;font-weight:600;color:var(--deep);text-decoration:none}.pwrow a:hover{text-decoration:underline}
+.legal{margin-top:14px;font-size:12px;color:var(--faint);text-align:center;line-height:1.5}
+.legal a{color:var(--dim)}
+.g{width:20px;height:20px}
+.mobile-logo{display:none}
+@media (max-width:860px){body{grid-template-columns:1fr;background:#fff}.side{display:none}.main{margin:0;border-radius:0;min-height:100vh;align-content:center}.mobile-logo{display:block;height:34px;margin-bottom:28px}}
+</style>
+</head>
+<body>
+<aside class="side">
+  <a href="/" aria-label="PeakCut home"><img src="/brand/logo-light.svg" alt="PeakCut"></a>
+  <div>
+    <h1>Clips from every stream, <em>without watching all of it.</em></h1>
+    <ul>
+      <li><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg><span>Records live streams and clips them as they happen</span></li>
+      <li><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg><span>Vertical shorts with word-by-word captions and a hook</span></li>
+      <li><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg><span>Free and open source: runs on your own AI key</span></li>
+    </ul>
+  </div>
+  <small>© <span id="year"></span> PeakCut · <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a></small>
+</aside>
+<main class="main"><div class="card">
+  <a href="/"><img class="mobile-logo" src="/brand/logo.svg" alt="PeakCut"></a>
+  <h2 id="h"></h2><p id="p"></p>
+  <a class="btn" id="google" href="/auth/google/start" hidden>
+    <svg class="g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.2.8-4.6l-7.9-6.2A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.9 6.2C6.5 42.6 14.6 48 24 48z"/></svg>
+    <span id="gtext"></span></a>
+  <div class="or" id="or" hidden>or use your email</div>
+  <form id="f" novalidate>
+    <div class="err" id="err" role="alert"></div>
+    <label id="namebox">Your name<input id="name" autocomplete="name" placeholder="What should we call you?" maxlength="80"></label>
+    <label>Email<input id="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+    <label><span class="pwrow">Password<a href="/reset" id="forgot">Forgot password?</a></span><span class="pwbox"><input id="password" type="password" required minlength="8" placeholder="Your password"><button type="button" id="pwshow" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/></svg></button></span><span class="hint" id="pwhint">At least 8 characters.</span></label>
+    <button class="btn primary" id="go"></button>
+  </form>
+  <p class="legal" id="legal">By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+  <p class="swap" id="swap"></p>
+</div></main>
+<script>
+document.getElementById("year").textContent = new Date().getFullYear();
+const $ = id => document.getElementById(id), up = location.pathname === "/signup";
+const next = new URLSearchParams(location.search).get("next");
+const dest = next && /^\/(?![\/\\])[^\\\t\r\n]*$/.test(next) ? next : "/app";
+document.title = up ? "Create your PeakCut account" : "Sign in to PeakCut";
+$("h").textContent = up ? "Create your account" : "Welcome back";
+$("p").textContent = up ? "Start clipping in a couple of minutes." : "Sign in to get back to your clips.";
+$("go").textContent = up ? "Create account" : "Sign in";
+$("gtext").textContent = up ? "Sign up with Google" : "Sign in with Google";
+$("namebox").hidden = !up; $("pwhint").hidden = !up; $("forgot").hidden = up;
+$("password").autocomplete = up ? "new-password" : "current-password";
+$("password").placeholder = up ? "Choose a password" : "Your password";
+$("pwshow").addEventListener("click", () => {
+  const p = $("password"), on = p.type === "password";
+  p.type = on ? "text" : "password";
+  $("pwshow").setAttribute("aria-pressed", String(on));
+  $("pwshow").setAttribute("aria-label", on ? "Hide password" : "Show password");
+  p.focus();
+});
+$("swap").innerHTML = up ? 'Already have an account? <a href="/login">Sign in</a>' : 'New to PeakCut? <a href="/signup">Create an account</a>';
+$("google").href = "/auth/google/start?next=" + encodeURIComponent(dest);
+const fail = m => { $("err").textContent = m; $("err").classList.add("on"); };
+if (new URLSearchParams(location.search).get("error") === "google") fail("Google sign-in didn't finish. Try again, or use your email.");
+fetch("/api/public").then(r => r.json()).then(p => {
+  if (p.google) { $("google").hidden = false; $("or").hidden = false; }
+}).catch(() => {});
+$("f").addEventListener("submit", async e => {
+  e.preventDefault(); $("err").classList.remove("on");
+  const email = $("email").value.trim(), password = $("password").value;
+  if (!email || !password) return fail("Enter your email and password.");
+  $("go").disabled = true;
+  try {
+    const r = await fetch(up ? "/api/auth/signup" : "/api/auth/login", {method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email, password, name:$("name").value.trim()})});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Something went wrong. Try again.");
+    location.href = dest;
+  } catch (err) { fail(err.message); $("go").disabled = false; }
+});
+</script>
+</body>
+</html>

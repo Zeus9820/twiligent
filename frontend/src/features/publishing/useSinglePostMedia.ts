@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, RefObject } from 'react';
 
 function clearInput(inputRef: RefObject<HTMLInputElement | null>): void {
@@ -13,11 +13,16 @@ export function useSinglePostMedia() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  const loadFile = useCallback((picked: File) => {
+    setFile(picked);
+    setFilePreview(URL.createObjectURL(picked));
+  }, []);
+  useEffect(() => () => { if (filePreview) URL.revokeObjectURL(filePreview); }, [filePreview]);
+
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
     if (!picked) return;
-    setFile(picked);
-    setFilePreview(URL.createObjectURL(picked));
+    loadFile(picked);
   };
 
   const handleCoverSelect = (e: ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +46,6 @@ export function useSinglePostMedia() {
 
   return {
     file, filePreview, coverFile, coverPreview, fileInputRef, coverInputRef,
-    handleFileSelect, handleCoverSelect, clearFile, clearCover,
+    loadFile, handleFileSelect, handleCoverSelect, clearFile, clearCover,
   };
 }

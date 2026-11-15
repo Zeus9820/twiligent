@@ -17,6 +17,7 @@ const VideoExplorer      = lazy(() => import('./features/analytics/videos/VideoE
 const ShortsExplorer     = lazy(() => import('./features/analytics/shorts/ShortsExplorer'));
 const ReelsExplorer      = lazy(() => import('./features/analytics/reels/ReelsExplorer'));
 const UploadContent      = lazy(() => import('./features/publishing/UploadContent'));
+const ClippingStudio     = lazy(() => import('./features/clipping/ClippingStudio'));
 const Automations        = lazy(() => import('./features/automations/Automations'));
 const AccountManager     = lazy(() => import('./features/accounts/AccountManager'));
 const Settings           = lazy(() => import('./features/settings/Settings'));
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
       { path: 'reels',         element: <ReelsExplorer /> },
       { path: 'upload',        element: <UploadContent /> },
       { path: 'automations',   element: <Automations /> },
+      { path: 'clipping',      element: <ClippingStudio /> },
       { path: 'accounts',           element: <AccountManager /> },
       { path: 'settings',           element: <Settings /> },
       { path: 'reddit/:id',         element: <RedditAnalytics /> },

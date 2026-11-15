@@ -1,0 +1,22 @@
+# PeakCut behind a Traefik that already runs on the server and serves other sites.
+#
+# Use it by adding this line to .env on the server (and leaving COMPOSE_PROFILES=own-https out):
+#   COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.traefik.yml
+#
+# Traefik finds PeakCut through these labels, on the network it shares with its other sites, and handles HTTPS.
+services:
+  app:
+    networks: [default, proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
+      - traefik.http.routers.peakcut.rule=Host(`${PEAKCUT_DOMAIN}`)
+      - traefik.http.routers.peakcut.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.peakcut.tls=true
+      - traefik.http.routers.peakcut.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      - traefik.http.services.peakcut.loadbalancer.server.port=8765
+
+networks:
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:-proxy}

@@ -42,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Publishing',
     items: [
+      { path: '/clipping',    label: 'Clipping',    icon: Scissors },
       { path: '/upload',      label: 'Publish',     icon: Send },
       { path: '/automations', label: 'Automations', icon: MessageSquareReply },
     ],

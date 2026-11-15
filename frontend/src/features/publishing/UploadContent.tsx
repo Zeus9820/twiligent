@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { AlertCircle, FolderUp, Plus, Upload } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/PageHeader';
+import { api } from '../../services/api';
 import { useAppContext } from '../../context/AppContext';
 import { useMediaStorageConfig } from '../../hooks/use-media-storage-config';
 import BulkUploadTab from './BulkUploadTab';
@@ -36,6 +37,35 @@ export default function UploadContent() {
   const editor = useScheduledPostEdit({ showToast, loadScheduledPosts });
   const removal = useScheduledPostDelete({ showToast, loadScheduledPosts });
   const form = useSinglePostForm();
+  const location = useLocation();
+  const importTarget = useRef({ form, showToast });
+  importTarget.current = { form, showToast };
+  const [clipImportError, setClipImportError] = useState('');
+  const [importingClip, setImportingClip] = useState(false);
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const jobId = query.get('clipJob'), clipId = query.get('clip');
+    if (!jobId || !clipId) return;
+    let live = true;
+    setImportingClip(true); setClipImportError('');
+    (async () => {
+      try {
+        const { job } = await api.getClippingJob(jobId);
+        const clip = job.clips.find(item => item.id === clipId);
+        if (!clip) throw new Error('This clip is no longer available.');
+        const blob = await api.downloadClip(jobId, clipId);
+        if (!live) return;
+        const target = importTarget.current.form;
+        if (target.file) return;
+        target.changeContentType('REELS');
+        target.loadFile(new File([blob], `${clip.id}.mp4`, { type: 'video/mp4' }));
+        target.setYoutubeTitle(clip.title); target.setYoutubeDescription(clip.description); target.setField('caption', clip.description);
+        importTarget.current.showToast('Clip loaded. Review its details and choose where to publish.');
+      } catch (error) { if (live) setClipImportError((error as Error).message); }
+      finally { if (live) setImportingClip(false); }
+    })();
+    return () => { live = false; };
+  }, [location.search]);
   const { setSelectedAccount } = form;
   const publish = useSinglePublish({ form, cloudConfig, showToast, onScheduled: loadScheduledPosts });
   const bulk = useBulkSettings();
@@ -91,6 +121,8 @@ export default function UploadContent() {
         )}
       />
 
+      {importingClip && <p className="text-small text-ink-muted">Loading your rendered clip…</p>}
+      {clipImportError && <p role="alert" className="text-small text-danger">{clipImportError}</p>}
       {!cloudConfig && form.publishInstagram && (
         <Alert variant="warning">
           <AlertCircle />

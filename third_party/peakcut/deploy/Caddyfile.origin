@@ -1,0 +1,16 @@
+# Behind Cloudflare's CDN (orange cloud): HTTPS between Cloudflare and this server uses a Cloudflare origin
+# certificate, kept in ./secrets on the server. It is valid for years and never needs renewing.
+# Use it with PEAKCUT_CADDYFILE=Caddyfile.origin in .env, and SSL/TLS mode "Full (strict)" in Cloudflare.
+{$PEAKCUT_DOMAIN} {
+	tls /secrets/cloudflare-origin.crt /secrets/cloudflare-origin.key
+	encode zstd gzip
+	@upload path /api/upload /api/upload/*
+	request_body @upload {
+		max_size 2200MB
+	}
+	@small not path /api/upload /api/upload/*
+	request_body @small {
+		max_size 1MB
+	}
+	reverse_proxy app:8765
+}

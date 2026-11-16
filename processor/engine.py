@@ -65,7 +65,9 @@ def main():
         snapshot['artifacts'] = [
             {'id': clip['id'], 'file': str(Path(job['dir']) / 'clips' / clip['file']),
              'title': clip.get('title') or clip.get('hook') or 'Clip', 'description': clip.get('description', ''), 'hashtags': clip.get('hashtags', []),
-             'start': clip['start'], 'end': clip['end']}
+             'start': clip['start'], 'end': clip['end'],
+             'captionWords': [{'text': word['w'], 'start': word['s'], 'end': word['e']} for word in clip.get('fixed_words', [])
+                              if clip['start'] <= word.get('s', -1) < clip['end']]}
             for clip in job.get('clips', []) if clip.get('status') == 'done' and clip.get('file')
         ]
         atomic_json(work / 'progress.json', snapshot)

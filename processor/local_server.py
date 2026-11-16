@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT / 'third_party' / 'peakcut'))
 import httpx
 import uvicorn
 from fastapi.responses import HTMLResponse
+from fastapi import Body, HTTPException
 from studio import ai, config, jobs, render, server, transcribe
 from apple_acceleration import install as install_apple_acceleration
 install_apple_acceleration(render)
@@ -80,6 +81,14 @@ _diagnostics = r'''<div class="local-diagnostics" style="margin:12px 0;padding:1
 if _job_progress_line not in _html:
     raise RuntimeError('Local processing details could not be attached to the app page.')
 _html = _html.replace(_job_progress_line, _job_progress_line + '\n    ' + _diagnostics, 1)
+_caption_marker = '<h3>Post text</h3>'
+_dialog_marker = '  D.sig = sig;\n  put($("#dposts"), postPills(c));'
+_js_marker = '$("#clipdlg").addEventListener("close",'
+if _caption_marker not in _html or _dialog_marker not in _html or _js_marker not in _html:
+    raise RuntimeError('Local caption editor could not be attached to the app page.')
+_html = _html.replace(_caption_marker, '<h3>Spoken captions</h3><p class="help">Correct each word; its timing stays the same.</p><div id="caption-words" class="help">Loading captions…</div><button class="btn" id="save-caption-words" type="button" disabled>Save captions and re-render</button>' + _caption_marker, 1)
+_html = _html.replace(_dialog_marker, '  D.sig = sig;\n  if (full && c.status === "done") loadCaptionWords(j.id, c.id);\n  put($("#dposts"), postPills(c));', 1)
+_html = _html.replace(_js_marker, (ROOT / 'processor' / 'caption_editor.js').read_text(encoding='utf-8') + '\n' + _js_marker, 1)
 
 _original_public = jobs.public
 def local_public(job):
@@ -90,6 +99,47 @@ def local_public(job):
         pass
     return result
 jobs.public = local_public
+
+def caption_clip(jid, cid):
+    job = server._job_or_404(jid)
+    clip = next((c for c in job['clips'] if c['id'] == cid), None)
+    if not clip:
+        raise HTTPException(404, 'Clip not found.')
+    return job, clip
+
+def caption_words(job, clip):
+    span = [round(clip['start'], 2), round(clip['end'], 2), 'en2']
+    if clip.get('fixed_for') == span and clip.get('fixed_words'):
+        words = clip['fixed_words']
+    else:
+        try:
+            words = json.loads((Path(job['dir']) / 'words.json').read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            return []
+    return [dict(w) for w in words if clip['start'] <= w.get('s', -1) < clip['end'] and w.get('w')]
+
+@server.app.get('/api/local-captions/{jid}/{cid}')
+def get_local_captions(jid: str, cid: str):
+    job, clip = caption_clip(jid, cid)
+    return {'words': [{'text': w['w'], 'start': w['s'], 'end': w['e']} for w in caption_words(job, clip)]}
+
+@server.app.post('/api/local-captions/{jid}/{cid}')
+def save_local_captions(jid: str, cid: str, body: dict = Body(...)):
+    job, clip = caption_clip(jid, cid)
+    if job['status'] in ('queued', 'running') or clip.get('status') != 'done':
+        raise HTTPException(409, 'Wait until this clip has finished rendering.')
+    words = caption_words(job, clip)
+    edits = body.get('words')
+    if not words or not isinstance(edits, list) or len(edits) != len(words):
+        raise HTTPException(400, 'The caption changed. Reload the clip and try again.')
+    if any(not isinstance(value, str) or not value.strip() or len(value.strip()) > 80 or any(ch.isspace() for ch in value.strip()) for value in edits):
+        raise HTTPException(400, 'Each field must contain one non-empty word, up to 80 characters.')
+    for word, value in zip(words, edits):
+        word['w'] = value.strip()
+    clip['fixed_words'] = words
+    clip['fixed_for'] = [round(clip['start'], 2), round(clip['end'], 2), 'en2']
+    jobs.request_render(jid, cid, {})
+    return {'ok': True}
 
 
 def local_page(name, shared=False):

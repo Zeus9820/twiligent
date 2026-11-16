@@ -1,4 +1,4 @@
-import type { ClipJob, ClipOptions, ClippingDashboard } from '@shared/types/clipping.ts';
+import type { CaptionTask, ClipCaptionWord, ClipJob, ClipOptions, ClippingDashboard } from '@shared/types/clipping.ts';
 import { supabase } from '../lib/supabase';
 import { failureMessage } from '../lib/apiErrors.ts';
 import type {
@@ -263,6 +263,9 @@ export const api = {
     createClipJob: (input: { id: string; name: string; source: ClipJob['source']; options: ClipOptions }) => request<{ job: ClipJob }>('/clipping/jobs', { method: 'POST', body: JSON.stringify(input) }),
     cancelClipJob: (id: string) => request<{ success: true }>(`/clipping/jobs/${id}/cancel`, { method: 'POST' }),
     retryClipJob: (id: string) => request<{ success: true }>(`/clipping/jobs/${id}/retry`, { method: 'POST' }),
+    inspectClipCaptions: (jobId: string, clipId: string) => request<{ task: CaptionTask }>(`/clipping/jobs/${jobId}/clips/${clipId}/captions/inspect`, { method: 'POST' }),
+    getClipCaptionTask: (taskId: string) => request<{ task: CaptionTask }>(`/clipping/caption-tasks/${taskId}`),
+    renderClipCaptions: (jobId: string, clipId: string, inspectTaskId: string, words: string[]) => request<{ task: CaptionTask }>(`/clipping/jobs/${jobId}/clips/${clipId}/captions/render`, { method: 'POST', body: JSON.stringify({ inspectTaskId, words }) }),
     downloadClip: async (id: string, clipId: string): Promise<Blob> => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('Sign in before downloading a clip.');

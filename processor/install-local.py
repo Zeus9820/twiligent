@@ -15,7 +15,7 @@ if not python.is_file():
 # Updating the local UI does not restart or interrupt the hosted job processor.
 (runtime / 'processor').mkdir(parents=True, exist_ok=True)
 shutil.copyfile(root / 'processor' / 'local_server.py', runtime / 'processor' / 'local_server.py')
-for module in ('apple_acceleration.py', 'whisperkit_adapter.py'):
+for module in ('apple_acceleration.py', 'whisperkit_adapter.py', 'caption_editor.js'):
     shutil.copyfile(root / 'processor' / module, runtime / 'processor' / module)
 label = f'gui/{os.getuid()}/dev.gameofkratos.localstudio'
 subprocess.run(['launchctl', 'bootout', label], capture_output=True)

@@ -65,6 +65,20 @@ async function active(c: AppContext, data?: Record<string, unknown>) {
     if (job.status !== 'processing' || job.deviceId !== device.id || job.leaseId !== lease || (job.leaseExpires ?? 0) < Date.now()) throw new ConflictError('The clipping job is cancelled or its lease expired.');
     return { device, job };
 }
+function captionWords(value: unknown, clip: ClipOutput) {
+    if (!Array.isArray(value) || value.length < 1 || value.length > 1000) throw new ValidationError('Invalid timed captions.');
+    return value.map(item => {
+        const word = item as Record<string, unknown>; const start = Number(word.start), end = Number(word.end);
+        if (typeof word.text !== 'string' || !word.text.trim() || word.text.length > 80 || !Number.isFinite(start) || !Number.isFinite(end) || start < clip.start || start >= clip.end || end < start || end > clip.end + 1) throw new ValidationError('Invalid timed caption word.');
+        return { text: word.text, start, end };
+    });
+}
+async function activeCaption(c: AppContext, taskId: string) {
+    const device = await processor(c); const task = await repo(c).getCaption(device.userId, id(taskId));
+    const lease = c.req.header('x-clipping-lease') || '';
+    if (task.deviceId !== device.id || task.status !== 'processing' || task.leaseId !== lease || Number(task.leaseExpires) < Date.now()) throw new ConflictError('The caption task lease expired.');
+    return { device, task, lease };
+}
 function outputKey(c: AppContext, device: Device, job: ClipJob) { return `${device.userId}/clipping/${job.id}/${job.leaseId}/${clipId(c.req.param('clipId'))}.mp4`; }
 
 export const clippingPublicRoutes = new Hono<AppEnv>();
@@ -88,6 +102,48 @@ clippingPublicRoutes.post('/clipping/processor/pair-status', async c => {
     return c.json({ paired: true, deviceToken: credential, deviceId: device.id });
 });
 clippingPublicRoutes.post('/clipping/processor/claim', async c => { const device = await processor(c); return c.json({ job: await repo(c).claim(device.userId, device.id) }); });
+clippingPublicRoutes.post('/clipping/processor/caption-tasks/claim', async c => { const device = await processor(c); return c.json({ task: await repo(c).claimCaption(device.userId, device.id) }); });
+clippingPublicRoutes.post('/clipping/processor/caption-tasks/:id/progress', async c => {
+    const input = await body(c); const { device, task, lease } = await activeCaption(c, id(c.req.param('id')));
+    const patch: Record<string, unknown> = {};
+    if (input.status === 'failed') { patch.status = 'failed'; patch.stage = 'Caption edit failed'; patch.error = redactSecrets(String(input.error || 'Caption editing failed.')).slice(0, 400); }
+    else if (input.status === 'completed' && task.kind === 'inspect') {
+        const job = await repo(c).get(device.userId, String(task.jobId)); const clip = job.clips.find(item => item.id === task.clipId);
+        if (!clip) throw new NotFoundError('Clip not found.');
+        patch.status = 'completed'; patch.stage = 'Timed captions ready'; patch.words = captionWords(input.words, clip);
+    } else if (input.status === 'processing') { patch.stage = String(input.stage || task.stage).slice(0, 120); }
+    else throw new ValidationError('Invalid caption task update.');
+    await repo(c).captionProgress(device.userId, String(task.id), device.id, lease, patch);
+    return c.json({ success: true });
+});
+clippingPublicRoutes.post('/clipping/processor/caption-tasks/:id/upload', async c => {
+    const { device, task } = await activeCaption(c, id(c.req.param('id')));
+    if (task.kind !== 'render') throw new ValidationError('This caption task does not render a clip.');
+    const key = `${device.userId}/clipping/${task.jobId}/revisions/${task.id}/${task.clipId}.mp4`;
+    const upload = await storage(c).createMultipartUpload(key, { httpMetadata: { contentType: 'video/mp4' } });
+    return c.json({ uploadId: upload.uploadId, partSize: PART_SIZE, key });
+});
+clippingPublicRoutes.put('/clipping/processor/caption-tasks/:id/upload/:uploadId/:part', async c => {
+    const { device, task } = await activeCaption(c, id(c.req.param('id'))); const part = Number(c.req.param('part'));
+    if (task.kind !== 'render' || !Number.isInteger(part) || part < 1 || part > 300) throw new ValidationError('Invalid caption upload part.');
+    if (Number(c.req.header('content-length') || 0) > PART_SIZE) throw new ValidationError('Upload part exceeds 8 MB.');
+    const bytes = await c.req.arrayBuffer(); if (!bytes.byteLength || bytes.byteLength > PART_SIZE) throw new ValidationError('Invalid upload part size.');
+    const key = `${device.userId}/clipping/${task.jobId}/revisions/${task.id}/${task.clipId}.mp4`;
+    return c.json(await storage(c).resumeMultipartUpload(key, c.req.param('uploadId')!).uploadPart(part, bytes));
+});
+clippingPublicRoutes.post('/clipping/processor/caption-tasks/:id/upload/:uploadId/complete', async c => {
+    const input = await body(c); const { device, task, lease } = await activeCaption(c, id(c.req.param('id')));
+    if (task.kind !== 'render' || !Array.isArray(input.parts) || !input.parts.length || input.parts.length > 300) throw new ValidationError('Invalid caption upload.');
+    const parts = input.parts.map((item, index) => { const p = item as { partNumber?: unknown; etag?: unknown }; if (p.partNumber !== index + 1 || typeof p.etag !== 'string' || p.etag.length > 128) throw new ValidationError('Invalid upload parts.'); return { partNumber: index + 1, etag: p.etag }; });
+    const key = `${device.userId}/clipping/${task.jobId}/revisions/${task.id}/${task.clipId}.mp4`; const bucket = storage(c);
+    if (!await bucket.head(key)) await bucket.resumeMultipartUpload(key, c.req.param('uploadId')!).complete(parts);
+    if (!await bucket.head(key)) throw new ValidationError('The rendered clip did not finish uploading.');
+    const job = await repo(c).get(device.userId, String(task.jobId)); const clip = job.clips.find(item => item.id === task.clipId);
+    if (!clip) throw new NotFoundError('Clip not found.');
+    const words = captionWords(task.words, clip);
+    await repo(c).completeCaptionRevision(device.userId, String(task.id), device.id, lease, String(task.expectedKey), { key, url: urlFor(c, key), captionWords: words });
+    return c.json({ success: true });
+});
 clippingPublicRoutes.post('/clipping/processor/jobs/:id/progress', async c => {
     const input = await body(c); const { device, job } = await active(c, input);
     const progress = Number(input.progress);
@@ -104,7 +160,13 @@ clippingPublicRoutes.post('/clipping/processor/jobs/:id/progress', async c => {
             if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end - start > job.options.maxSeconds + 1) throw new ValidationError('Invalid clip duration.');
             if (!await storage(c).head(key)) throw new ValidationError('A rendered clip has not finished uploading.');
             const hashtags = Array.isArray(item.hashtags) ? item.hashtags.filter((tag): tag is string => typeof tag === 'string').map(tag => tag.replace(/[^\p{L}\p{N}_]/gu, '').slice(0, 40)).filter(Boolean).slice(0, 8) : [];
-            clips.push({ id: String(item.id), title: String(item.title || 'Clip').slice(0, 100), description: String(item.description || '').slice(0, 2200), hashtags, start, end, key, url: urlFor(c, key) });
+            const captionWords = Array.isArray(item.captionWords) ? item.captionWords.slice(0, 1000).flatMap((value: unknown) => {
+                if (!value || typeof value !== 'object') return [];
+                const word = value as Record<string, unknown>; const wordStart = Number(word.start), wordEnd = Number(word.end);
+                if (typeof word.text !== 'string' || !word.text.trim() || word.text.length > 80 || !Number.isFinite(wordStart) || !Number.isFinite(wordEnd) || wordStart < start || wordStart >= end || wordEnd < wordStart || wordEnd > end + 1) return [];
+                return [{ text: word.text, start: wordStart, end: wordEnd }];
+            }) : [];
+            clips.push({ id: String(item.id), title: String(item.title || 'Clip').slice(0, 100), description: String(item.description || '').slice(0, 2200), hashtags, captionWords, start, end, key, url: urlFor(c, key) });
         }
         patch.status = 'completed'; patch.progress = 1; patch.clips = clips;
     }
@@ -224,4 +286,29 @@ clippingRoutes.get('/clipping/jobs/:id/clips/:clipId', async c => {
     c.header('Content-Type', 'video/mp4'); c.header('Content-Disposition', `attachment; filename="${clip.id}.mp4"`);
     c.header('Content-Length', String(object.size));
     return c.body(object.body);
+});
+clippingRoutes.post('/clipping/jobs/:id/clips/:clipId/captions/inspect', async c => {
+    const user = c.get('userId'); const job = await repo(c).get(user, id(c.req.param('id'))); const clip = job.clips.find(item => item.id === clipId(c.req.param('clipId')));
+    if (!clip) throw new NotFoundError('Clip not found.');
+    if (job.status !== 'completed' || !job.deviceId) throw new ConflictError('Only completed clips from a connected Mac can be edited.');
+    const now = new Date().toISOString(); const task = { id: crypto.randomUUID(), jobId: job.id, clipId: clip.id, kind: 'inspect' as const, status: 'queued' as const, stage: 'Waiting for your Mac', createdAt: now, updatedAt: now };
+    await repo(c).enqueueCaption(user, task, job.deviceId, { expectedKey: clip.key });
+    return c.json({ task });
+});
+clippingRoutes.get('/clipping/caption-tasks/:id', async c => {
+    const task = await repo(c).getCaption(c.get('userId'), id(c.req.param('id')));
+    const { id: taskId, jobId, clipId: taskClipId, kind, status, stage, createdAt, updatedAt, error, words } = task;
+    return c.json({ task: { id: taskId, jobId, clipId: taskClipId, kind, status, stage, createdAt, updatedAt, ...(error ? { error } : {}), ...(words ? { words } : {}) } });
+});
+clippingRoutes.post('/clipping/jobs/:id/clips/:clipId/captions/render', async c => {
+    const user = c.get('userId'); const job = await repo(c).get(user, id(c.req.param('id'))); const clip = job.clips.find(item => item.id === clipId(c.req.param('clipId')));
+    if (!clip) throw new NotFoundError('Clip not found.');
+    if (job.status !== 'completed' || !job.deviceId) throw new ConflictError('Only completed clips from a connected Mac can be edited.');
+    const input = await body(c); const inspected = await repo(c).getCaption(user, id(String(input.inspectTaskId || '')));
+    if (inspected.kind !== 'inspect' || inspected.status !== 'completed' || inspected.jobId !== job.id || inspected.clipId !== clip.id || !Array.isArray(inspected.words)) throw new ValidationError('Reload the timed captions before saving.');
+    const original = captionWords(inspected.words, clip); const edits = input.words;
+    if (!Array.isArray(edits) || edits.length !== original.length || edits.some(value => typeof value !== 'string' || !value.trim() || value.trim().length > 80 || /\s/.test(value.trim()))) throw new ValidationError('Each caption field must contain one word, up to 80 characters.');
+    const now = new Date().toISOString(); const task = { id: crypto.randomUUID(), jobId: job.id, clipId: clip.id, kind: 'render' as const, status: 'queued' as const, stage: 'Waiting for your Mac', createdAt: now, updatedAt: now };
+    await repo(c).enqueueCaption(user, task, job.deviceId, { expectedKey: clip.key, words: original.map((word, index) => ({ ...word, text: (edits[index] as string).trim() })) });
+    return c.json({ task });
 });

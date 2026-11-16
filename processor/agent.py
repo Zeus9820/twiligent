@@ -180,7 +180,7 @@ def process(config, root, job):
                     result = request(api, 'PUT', f'{base}/{upload}/{number}', credential, lease, content=chunk)
                     parts.append({'partNumber': number, 'etag': result['etag']})
             request(api, 'POST', f'{base}/{upload}/complete', credential, lease, json={'leaseId': lease, 'parts': parts})
-            clips.append({**{key: artifact[key] for key in ('id', 'title', 'description', 'start', 'end')}, 'hashtags': artifact.get('hashtags', [])})
+            clips.append({**{key: artifact[key] for key in ('id', 'title', 'description', 'start', 'end')}, 'hashtags': artifact.get('hashtags', []), 'captionWords': artifact.get('captionWords', [])})
         warning = (snapshot.get('ai') or {}).get('note') or ''
         if not (snapshot.get('ai') or {}).get('used'):
             warning = 'No AI-selected highlights were produced. The source may have too little speech, or the AI service was unavailable.'
@@ -202,6 +202,92 @@ def process(config, root, job):
         done.set()
         (work / 'request.json').unlink(missing_ok=True)
         CHILD = None
+
+
+def process_caption(config, root, task):
+    global CHILD
+    api, credential, lease = config['api'], config['deviceToken'], task['leaseId']
+    tid = str(uuid.UUID(task['id']))
+    work = root / 'caption-tasks' / tid
+    work.mkdir(parents=True, exist_ok=True, mode=0o700)
+    route = f'/clipping/processor/caption-tasks/{tid}'
+    spec_file, result_file = work / 'request.json', work / 'result.json'
+    spec = {'root': str(root), 'task': task, 'result': str(result_file), 'output': str(work / 'revision.mp4')}
+    write_private(spec_file, spec)
+    done = threading.Event()
+    cancelled = threading.Event()
+    stage = {'value': task.get('stage', 'Working on your Mac')}
+
+    def heartbeat():
+        while not done.is_set() and not STOP.is_set():
+            try:
+                request(api, 'POST', route + '/progress', credential, lease, json={'status': 'processing', 'stage': stage['value']})
+            except httpx.HTTPStatusError as error:
+                if error.response.status_code in (401, 403, 404, 409):
+                    cancelled.set()
+                    return
+            except httpx.HTTPError:
+                pass
+            done.wait(15)
+
+    thread = threading.Thread(target=heartbeat, daemon=True)
+    thread.start()
+    try:
+        # This is also the lock used by the local PeakCut worker. Editing never
+        # competes with source processing for CPU, memory, or the accelerator.
+        lock = (root / 'processing.lock').open('a')
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if STOP.is_set() or cancelled.is_set():
+            raise InterruptedError('The caption task was interrupted.')
+        stage['value'] = 'Reading the original timed captions' if task['kind'] == 'inspect' else 'Rendering the corrected captions'
+        with (work / 'process.log').open('ab') as log:
+            CHILD = subprocess.Popen([sys.executable, str(ROOT / 'processor' / 'caption_task_worker.py'), str(spec_file)], stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            while CHILD.poll() is None:
+                if STOP.is_set() or cancelled.is_set():
+                    terminate_child()
+                    raise InterruptedError('The caption task was interrupted.')
+                time.sleep(1)
+        if CHILD.returncode:
+            log_text = (work / 'process.log').read_text(errors='replace')[-1000:]
+            raise RuntimeError(log_text.strip() or 'Caption processing failed.')
+        result = read_json(result_file, {})
+        if task['kind'] == 'inspect':
+            request(api, 'POST', route + '/progress', credential, lease, json={'status': 'completed', 'words': result.get('words', [])})
+            print(f"Caption timing loaded for {task['jobId']} {task['clipId']}.", flush=True)
+        else:
+            file = Path(result['file']).resolve()
+            if not file.is_relative_to(work.resolve()) or not file.is_file() or file.suffix != '.mp4':
+                raise RuntimeError('Caption renderer returned an invalid video file.')
+            stage['value'] = 'Uploading the revised clip'
+            base = route + '/upload'
+            started = request(api, 'POST', base, credential, lease, json={})
+            upload = started['uploadId']
+            parts = []
+            with file.open('rb') as handle:
+                while chunk := handle.read(started['partSize']):
+                    if STOP.is_set() or cancelled.is_set():
+                        raise InterruptedError('The caption task was interrupted.')
+                    number = len(parts) + 1
+                    result = request(api, 'PUT', f'{base}/{upload}/{number}', credential, lease, content=chunk)
+                    parts.append({'partNumber': number, 'etag': result['etag']})
+            request(api, 'POST', f'{base}/{upload}/complete', credential, lease, json={'parts': parts})
+            print(f"Revised clip {task['clipId']} uploaded for {task['jobId']}.", flush=True)
+        done.set()
+        thread.join(timeout=20)
+    except Exception as error:
+        terminate_child()
+        done.set()
+        thread.join(timeout=20)
+        if not cancelled.is_set() and not STOP.is_set():
+            try:
+                request(api, 'POST', route + '/progress', credential, lease, json={'status': 'failed', 'error': str(error)[:400]})
+            except httpx.HTTPError:
+                pass
+        print(f'Caption edit stopped: {str(error)[:300]}', flush=True)
+    finally:
+        done.set()
+        CHILD = None
+        spec_file.unlink(missing_ok=True)
 
 
 def main():
@@ -229,6 +315,11 @@ def main():
                 browser = False
                 continue
             write_private(root / 'status.json', {'phase': 'online', 'deviceId': config['deviceId'], 'at': time.time()})
+            caption = request(config['api'], 'POST', '/clipping/processor/caption-tasks/claim', config['deviceToken'], json={}).get('task')
+            if caption:
+                write_private(root / 'status.json', {'phase': 'caption-edit', 'taskId': caption['id'], 'at': time.time()})
+                process_caption(config, root, caption)
+                continue
             response = request(config['api'], 'POST', '/clipping/processor/claim', config['deviceToken'], json={})
             if response.get('job'):
                 write_private(root / 'status.json', {'phase': 'processing', 'jobId': response['job']['id'], 'at': time.time()})

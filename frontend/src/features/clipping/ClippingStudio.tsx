@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, Download, Laptop, LoaderCircle, Scissors, Upload, X } from 'lucide-react';
+import { CheckCircle2, Download, Laptop, LoaderCircle, Pencil, Save, Scissors, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
@@ -9,7 +9,7 @@ import { api } from '../../services/api';
 import { useAppContext } from '../../context/AppContext';
 import { useMediaStorageConfig } from '../../hooks/use-media-storage-config';
 import { timeAgo } from '../../utils/formatters';
-import type { ClipJob, ClipOptions, ClippingDashboard } from '@shared/types/clipping.ts';
+import type { CaptionTask, ClipCaptionWord, ClipJob, ClipOptions, ClippingDashboard } from '@shared/types/clipping.ts';
 
 const DEFAULTS: ClipOptions = { maxClips: 3, minSeconds: 15, maxSeconds: 60, style: 'clean', layout: 'blur' };
 const field = 'h-10 w-full rounded-field border border-input bg-surface-raised px-3 text-sm text-ink';
@@ -49,6 +49,12 @@ export default function ClippingStudio() {
   const [selectedId, setSelectedId] = useState('');
   const [pendingAction, setPendingAction] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [captionClipId, setCaptionClipId] = useState('');
+  const [captionTaskId, setCaptionTaskId] = useState('');
+  const [captionWords, setCaptionWords] = useState<ClipCaptionWord[]>([]);
+  const [captionBusy, setCaptionBusy] = useState(false);
+  const [captionStage, setCaptionStage] = useState('');
+  const [captionError, setCaptionError] = useState('');
   const storage = useMediaStorageConfig();
   const alive = useRef(true);
   const pending = useRef<{ id: string; source?: ClipJob['source']; file?: File; url: string; mode: string; options: string } | null>(null);
@@ -108,6 +114,38 @@ export default function ClippingStudio() {
     } catch (problem) { setError((problem as Error).message); }
     finally { setPendingAction(''); }
   }
+  async function waitForCaptionTask(taskId: string): Promise<CaptionTask> {
+    const deadline = Date.now() + 15 * 60_000;
+    while (Date.now() < deadline) {
+      const { task } = await api.getClipCaptionTask(taskId);
+      setCaptionStage(task.stage);
+      if (task.status === 'completed' || task.status === 'failed') return task;
+      await new Promise(resolve => window.setTimeout(resolve, 3000));
+    }
+    throw new Error('The Mac is taking longer than expected. Your edit is still safe; check the task again in a moment.');
+  }
+  async function openCaptionEditor(job: ClipJob, clip: ClipJob['clips'][number]) {
+    setCaptionClipId(clip.id); setCaptionTaskId(''); setCaptionError(''); setCaptionBusy(true); setCaptionStage('Sending the caption request to your Mac');
+    try {
+      const { task: created } = await api.inspectClipCaptions(job.id, clip.id); setCaptionTaskId(created.id);
+      const task = await waitForCaptionTask(created.id);
+      if (task.status !== 'completed' || !task.words?.length) throw new Error(task.error || 'The Mac could not load timed captions for this clip.');
+      setCaptionWords(task.words); setCaptionTaskId(created.id); setCaptionStage('Captions ready to edit');
+    } catch (problem) { setCaptionError((problem as Error).message); }
+    finally { setCaptionBusy(false); }
+  }
+  async function saveCaptionEditor(job: ClipJob, clipId: string) {
+    if (!captionTaskId || !captionWords.length || captionBusy) return;
+    setCaptionBusy(true); setCaptionError(''); setCaptionStage('Queueing the revised clip for your Mac');
+    try {
+      const { task: created } = await api.renderClipCaptions(job.id, clipId, captionTaskId, captionWords.map(word => word.text));
+      const task = await waitForCaptionTask(created.id);
+      if (task.status !== 'completed') throw new Error(task.error || 'The Mac could not render this caption edit. The existing clip is unchanged.');
+      setCaptionClipId(''); setCaptionTaskId(''); setCaptionWords([]); setCaptionStage('');
+      showToast('Caption edit saved. The revised clip is ready.'); await refresh();
+    } catch (problem) { setCaptionError((problem as Error).message); }
+    finally { setCaptionBusy(false); }
+  }
   const online = data.processors.some(processor => processor.online);
   const selected = data.jobs.find(job => job.id === selectedId) || data.jobs[0];
   const jobs = data.jobs.filter(job => filter === 'all' || (filter === 'completed' ? job.status === 'completed' : job.status === 'queued' || job.status === 'processing'));
@@ -159,7 +197,9 @@ export default function ClippingStudio() {
             <p className="mt-3 text-caption text-ink-muted">{guidance(selected, online)}</p>
             <p className="mt-1 text-caption text-ink-faint">Updates arrive about every 15 seconds. Clips appear after rendering and upload.</p>
           </section>
-          {selected.clips.length === 0 ? <p className="py-8 text-center text-small text-ink-muted">{selected.status === 'queued' ? 'Waiting for your Mac to pick up this video.' : selected.status === 'completed' ? 'No highlights were found. Try a video with more dialogue or reactions.' : 'Clips will appear after processing and upload finish.'}</p> : <div className="grid gap-4 md:grid-cols-2">{selected.clips.map(clip => <article key={clip.id} className="overflow-hidden rounded-card border border-line"><video src={clip.url} controls preload="none" className="aspect-[9/16] max-h-[28rem] w-full bg-black object-contain" /><div className="p-3"><h3 className="text-small font-semibold">{clip.title}</h3><p className="mt-1 text-caption text-ink-faint">{Math.round(clip.end - clip.start)} seconds · {Math.round(clip.start)}s–{Math.round(clip.end)}s</p><p className="mt-2 line-clamp-3 text-small text-ink-muted">{clip.description}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={pendingAction === clip.id} onClick={() => void download(selected, clip.id)}><Download className="size-3.5" />Download</Button><Link to={`/upload?clipJob=${selected.id}&clip=${clip.id}`} className="inline-flex h-8 items-center rounded-control bg-brand px-3 text-small font-medium text-white">Use in Publish</Link></div></div></article>)}</div>}
+          {selected.clips.length === 0 ? <p className="py-8 text-center text-small text-ink-muted">{selected.status === 'queued' ? 'Waiting for your Mac to pick up this video.' : selected.status === 'completed' ? 'No highlights were found. Try a video with more dialogue or reactions.' : 'Clips will appear after processing and upload finish.'}</p> : <div className="grid gap-4 md:grid-cols-2">{selected.clips.map(clip => <article key={clip.id} className="overflow-hidden rounded-card border border-line"><video src={clip.url} controls preload="none" className="aspect-[9/16] max-h-[28rem] w-full bg-black object-contain" /><div className="p-3"><h3 className="text-small font-semibold">{clip.title}</h3><p className="mt-1 text-caption text-ink-faint">{Math.round(clip.end - clip.start)} seconds · {Math.round(clip.start)}s–{Math.round(clip.end)}s</p><p className="mt-2 line-clamp-3 text-small text-ink-muted">{clip.description}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={pendingAction === clip.id} onClick={() => void download(selected, clip.id)}><Download className="size-3.5" />Download</Button><Button size="sm" variant="outline" disabled={!online || captionBusy} onClick={() => void openCaptionEditor(selected, clip)}><Pencil className="size-3.5" />Edit on-video captions</Button><Link to={`/upload?clipJob=${selected.id}&clip=${clip.id}`} className="inline-flex h-8 items-center rounded-control bg-brand px-3 text-small font-medium text-white">Use in Publish</Link></div>
+            {captionClipId === clip.id && <section className="mt-4 rounded-control border border-line bg-surface-sunken p-3" aria-label="Edit spoken captions"><h4 className="text-small font-semibold">Words shown in the video</h4><p className="mt-1 text-caption text-ink-muted">Correct one word at a time. Timing and effects stay aligned. The old clip remains available until the new render finishes.</p>{captionBusy && <p className="mt-3 flex items-center gap-2 text-small text-ink-muted"><LoaderCircle className="size-4 animate-spin" />{captionStage || 'Working on your Mac…'}</p>}{captionError && <p role="alert" className="mt-3 text-small text-danger">{captionError}</p>}{captionWords.length > 0 && <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">{captionWords.map((word, index) => <label key={`${word.start}-${index}`} className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-2 text-caption"><span className="text-ink-faint">{word.start.toFixed(1)}s</span><input aria-label={`Caption word ${index + 1} at ${word.start.toFixed(1)} seconds`} maxLength={80} value={word.text} disabled={captionBusy} onChange={event => setCaptionWords(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item))} className={`${field} h-9`} /></label>)}</div>}{captionWords.length > 0 && <div className="mt-3 flex gap-2"><Button size="sm" disabled={captionBusy || !online || captionWords.some(word => !word.text.trim() || /\s/.test(word.text.trim()))} onClick={() => void saveCaptionEditor(selected, clip.id)}><Save className="size-3.5" />{captionBusy ? 'Rendering…' : 'Save and re-render'}</Button><Button size="sm" variant="outline" disabled={captionBusy} onClick={() => { setCaptionClipId(''); setCaptionTaskId(''); setCaptionWords([]); setCaptionError(''); }}>Close</Button></div>}</section>}
+          </div></article>)}</div>}
         </>}
       </SurfaceBox>
     </div>

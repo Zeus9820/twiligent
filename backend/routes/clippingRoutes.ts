@@ -11,6 +11,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PART_SIZE = 8 * 1024 * 1024;
 interface Device { id: string; userId: string; name: string; lastSeen: string; tokenHash: string }
 interface Pairing { pollHash: string; name: string; userId?: string }
+interface LocalBatch { id: string; userId: string; deviceId: string; name: string; createdAt: string; clips: Array<Omit<ClipOutput, 'key' | 'url'>> }
+const LOCAL_BATCH_TTL = 86400;
 function redis(c: AppContext): Redis { const value = c.get('redis'); if (!value) throw new NotConfiguredError('Clipping storage is unavailable.'); return value; }
 function repo(c: AppContext) { return createClippingRepository(redis(c)); }
 function storage(c: AppContext) { if (!c.env.MEDIA_BUCKET || !c.env.MEDIA_PUBLIC_URL) throw new NotConfiguredError('R2 storage is unavailable.'); return c.env.MEDIA_BUCKET; }
@@ -80,6 +82,13 @@ async function activeCaption(c: AppContext, taskId: string) {
     return { device, task, lease };
 }
 function outputKey(c: AppContext, device: Device, job: ClipJob) { return `${device.userId}/clipping/${job.id}/${job.leaseId}/${clipId(c.req.param('clipId'))}.mp4`; }
+function localBatchKey(user: string, batch: string) { return `${clippingKey(user)}:local-batch:${batch}`; }
+function localBatchObjectKey(user: string, batch: string, clip: string) { return `${user}/clipping/local-batches/${batch}/${clip}.mp4`; }
+async function activeLocalBatch(c: AppContext, batchId: string) {
+    const device = await processor(c); const batch = await redis(c).get<LocalBatch>(localBatchKey(device.userId, id(batchId)));
+    if (!batch || batch.deviceId !== device.id) throw new NotFoundError('This local upload batch expired or is unavailable.');
+    return { device, batch };
+}
 
 export const clippingPublicRoutes = new Hono<AppEnv>();
 clippingPublicRoutes.post('/clipping/processor/register', rateLimit({ name: 'clip-register', label: 'Wait before requesting another pairing code', config: { algorithm: 'fixedWindow', limit: 10, windowMs: 600_000 } }, clientIp), async c => {
@@ -102,6 +111,64 @@ clippingPublicRoutes.post('/clipping/processor/pair-status', async c => {
     return c.json({ paired: true, deviceToken: credential, deviceId: device.id });
 });
 clippingPublicRoutes.post('/clipping/processor/claim', async c => { const device = await processor(c); return c.json({ job: await repo(c).claim(device.userId, device.id) }); });
+clippingPublicRoutes.post('/clipping/processor/local-batches', async c => {
+    const input = await body(c); const device = await processor(c);
+    if (!Array.isArray(input.clips) || input.clips.length < 1 || input.clips.length > 20) throw new ValidationError('Choose between 1 and 20 finished clips.');
+    const seen = new Set<string>();
+    const clips = input.clips.map((value: unknown) => {
+        if (!value || typeof value !== 'object') throw new ValidationError('Invalid local clip metadata.');
+        const item = value as Record<string, unknown>; const clip = clipId(String(item.id || ''));
+        if (seen.has(clip)) throw new ValidationError('Duplicate clip IDs in this batch.'); seen.add(clip);
+        const start = Number(item.start), end = Number(item.end);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end - start > 180) throw new ValidationError('Local clips must be no longer than 3 minutes.');
+        const hashtagValues = Array.isArray(item.hashtags) ? item.hashtags : [];
+        const hashtags = hashtagValues.filter((tag): tag is string => typeof tag === 'string').map(tag => tag.replace(/^#+/, '').replace(/[^\p{L}\p{N}_]/gu, '').slice(0, 40)).filter(Boolean).slice(0, 8);
+        const details: ClipOutput = { id: clip, title: String(item.title || 'Clip').slice(0, 100), description: String(item.description || '').slice(0, 2200), hashtags, start, end, key: '', url: '' };
+        return { id: details.id, title: details.title, description: details.description, hashtags: details.hashtags, start, end };
+    });
+    const batchId = id(String(input.batchId || crypto.randomUUID())); const now = new Date().toISOString();
+    if (await redis(c).get(`${clippingKey(device.userId)}:job:${batchId}`)) throw new ConflictError('A Studio job already uses this upload batch ID.');
+    const batch: LocalBatch = { id: batchId, userId: device.userId, deviceId: device.id, name: String(input.name || 'Local clips').slice(0, 150), createdAt: now, clips };
+    const added = await redis(c).eval<unknown[], number>(`if redis.call('EXISTS',KEYS[1])==1 then return 0 end; redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[2]); return 1`, [localBatchKey(device.userId, batchId)], [JSON.stringify(batch), LOCAL_BATCH_TTL]);
+    if (!added) throw new ConflictError('This upload batch already exists. Start the upload again.');
+    return c.json({ batchId, partSize: PART_SIZE });
+});
+clippingPublicRoutes.post('/clipping/processor/local-batches/:id/clips/:clipId/upload', async c => {
+    const { device, batch } = await activeLocalBatch(c, c.req.param('id')!); const clip = clipId(c.req.param('clipId'));
+    if (!batch.clips.some(item => item.id === clip)) throw new NotFoundError('Clip not found in this upload batch.');
+    const key = localBatchObjectKey(device.userId, batch.id, clip); const upload = await storage(c).createMultipartUpload(key, { httpMetadata: { contentType: 'video/mp4' } });
+    return c.json({ uploadId: upload.uploadId, partSize: PART_SIZE });
+});
+clippingPublicRoutes.put('/clipping/processor/local-batches/:id/clips/:clipId/upload/:uploadId/:part', async c => {
+    const { device, batch } = await activeLocalBatch(c, c.req.param('id')!); const clip = clipId(c.req.param('clipId')); const part = Number(c.req.param('part'));
+    if (!batch.clips.some(item => item.id === clip) || !Number.isInteger(part) || part < 1 || part > 300) throw new ValidationError('Invalid clip upload part.');
+    if (Number(c.req.header('content-length') || 0) > PART_SIZE) throw new ValidationError('Upload part exceeds 8 MB.');
+    const bytes = await c.req.arrayBuffer(); if (!bytes.byteLength || bytes.byteLength > PART_SIZE) throw new ValidationError('Invalid upload part size.');
+    return c.json(await storage(c).resumeMultipartUpload(localBatchObjectKey(device.userId, batch.id, clip), c.req.param('uploadId')!).uploadPart(part, bytes));
+});
+clippingPublicRoutes.post('/clipping/processor/local-batches/:id/clips/:clipId/upload/:uploadId/complete', async c => {
+    const input = await body(c); const { device, batch } = await activeLocalBatch(c, c.req.param('id')!); const clip = clipId(c.req.param('clipId'));
+    if (!batch.clips.some(item => item.id === clip) || !Array.isArray(input.parts) || !input.parts.length || input.parts.length > 300) throw new ValidationError('Invalid clip upload.');
+    const parts = input.parts.map((item, index) => { const p = item as { partNumber?: unknown; etag?: unknown }; if (p.partNumber !== index + 1 || typeof p.etag !== 'string' || p.etag.length > 128) throw new ValidationError('Invalid upload parts.'); return { partNumber: index + 1, etag: p.etag }; });
+    const key = localBatchObjectKey(device.userId, batch.id, clip); const bucket = storage(c);
+    if (!await bucket.head(key)) await bucket.resumeMultipartUpload(key, c.req.param('uploadId')!).complete(parts);
+    if (!await bucket.head(key)) throw new ValidationError('The clip upload did not finish.');
+    return c.json({ success: true });
+});
+clippingPublicRoutes.post('/clipping/processor/local-batches/:id/complete', async c => {
+    const { device, batch } = await activeLocalBatch(c, c.req.param('id')!); const bucket = storage(c);
+    const clips: ClipOutput[] = [];
+    for (const item of batch.clips) {
+        const key = localBatchObjectKey(device.userId, batch.id, item.id);
+        if (!await bucket.head(key)) throw new ConflictError(`Clip ${item.id} is still uploading.`);
+        clips.push({ ...item, key, url: urlFor(c, key) });
+    }
+    const first = clips[0]; const now = new Date().toISOString();
+    const job: ClipJob = { id: batch.id, name: batch.name, source: { kind: 'upload', key: first.key, url: first.url }, options: { maxClips: clips.length, minSeconds: 3, maxSeconds: 180, style: 'clean', layout: 'blur' }, status: 'completed', progress: 1, stage: `${clips.length} clips ready`, createdAt: batch.createdAt, updatedAt: now, clips };
+    await repo(c).createReady(device.userId, job);
+    await redis(c).del(localBatchKey(device.userId, batch.id));
+    return c.json({ success: true, jobId: batch.id });
+});
 clippingPublicRoutes.post('/clipping/processor/caption-tasks/claim', async c => { const device = await processor(c); return c.json({ task: await repo(c).claimCaption(device.userId, device.id) }); });
 clippingPublicRoutes.post('/clipping/processor/caption-tasks/:id/progress', async c => {
     const input = await body(c); const { device, task, lease } = await activeCaption(c, id(c.req.param('id')));

@@ -1,11 +1,13 @@
 """Local clipping UI using the paired Mac's fixed Flash endpoint. Loopback only."""
 from __future__ import annotations
 import fcntl
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import os
 from pathlib import Path
 import sys
 import threading
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = Path.home() / 'Library' / 'Application Support' / 'Kratos Studio' / 'PeakCut'
@@ -87,8 +89,13 @@ _js_marker = '$("#clipdlg").addEventListener("close",'
 if _caption_marker not in _html or _dialog_marker not in _html or _js_marker not in _html:
     raise RuntimeError('Local caption editor could not be attached to the app page.')
 _html = _html.replace(_caption_marker, '<h3>Spoken captions</h3><p class="help">Correct each word; its timing stays the same.</p><div id="caption-words" class="help">Loading captions…</div><button class="btn" id="save-caption-words" type="button" disabled>Save captions and re-render</button>' + _caption_marker, 1)
+_bulk_marker = '<h3>Post it</h3>'
+if _bulk_marker not in _html:
+    raise RuntimeError('Bulk upload action could not be attached to the local clip editor.')
+_html = _html.replace(_bulk_marker, '<h3>Bulk upload</h3><p class="help">Send every finished clip from this video to Kratos Studio. Review them there and choose Instagram, YouTube, or both.</p><button class="btn primary" id="bulk-upload-clips" type="button" ${j.status === "done" && c.status === "done" ? "" : "disabled"}>Upload all finished clips</button><div id="bulk-upload-state" class="help" role="status"></div><h3>Post it</h3>', 1)
 _html = _html.replace(_dialog_marker, '  D.sig = sig;\n  if (full && c.status === "done") loadCaptionWords(j.id, c.id);\n  put($("#dposts"), postPills(c));', 1)
 _html = _html.replace(_js_marker, (ROOT / 'processor' / 'caption_editor.js').read_text(encoding='utf-8') + '\n' + _js_marker, 1)
+_html = _html.replace(_js_marker, (ROOT / 'processor' / 'publish_editor.js').read_text(encoding='utf-8') + '\n' + _js_marker, 1)
 
 _original_public = jobs.public
 def local_public(job):
@@ -140,6 +147,112 @@ def save_local_captions(jid: str, cid: str, body: dict = Body(...)):
     clip['fixed_for'] = [round(clip['start'], 2), round(clip['end'], 2), 'en2']
     jobs.request_render(jid, cid, {})
     return {'ok': True}
+
+
+_publish_lock = threading.RLock()
+_publish_jobs: dict[str, dict] = {}
+
+def _publish_update(publish_id, **values):
+    with _publish_lock:
+        if publish_id in _publish_jobs:
+            _publish_jobs[publish_id].update(values)
+
+def _publish_status(publish_id):
+    with _publish_lock:
+        state = _publish_jobs.get(publish_id)
+        if not state:
+            raise HTTPException(404, 'This upload status is no longer available. Start the upload again.')
+        return {key: state[key] for key in ('id', 'jobId', 'status', 'stage', 'progress', 'filesDone', 'filesTotal', 'error') if key in state}
+
+def _upload_local_batch(publish_id, job, files, total_bytes):
+    try:
+        connection = credentials(); api_url = connection['api']; credential = connection['deviceToken']
+
+        def remote(method, path, **kwargs):
+            headers = {'Authorization': f'Bearer {credential}'}
+            headers.update(kwargs.pop('headers', {}))
+            response = httpx.request(method, api_url + path, headers=headers, timeout=120, **kwargs)
+            response.raise_for_status()
+            return response.json()
+
+        _publish_update(publish_id, stage='Connecting to Studio storage')
+        batch = remote('POST', '/clipping/processor/local-batches', json={
+            'batchId': publish_id,
+            'name': str(job.get('title') or job.get('source', {}).get('name') or 'Local clips')[:150],
+            'clips': [clip for clip, _path in files],
+        })
+        batch_id = batch['batchId']
+        _publish_update(publish_id, jobId=batch_id, stage='Uploading clips to Studio')
+        uploaded_bytes = 0
+        progress_lock = threading.Lock()
+
+        def upload_one(clip, file_path):
+            nonlocal uploaded_bytes
+            start_path = f"/clipping/processor/local-batches/{batch_id}/clips/{clip['id']}/upload"
+            started = remote('POST', start_path, json={})
+            parts = []
+            with file_path.open('rb') as source:
+                while True:
+                    chunk = source.read(started['partSize'])
+                    if not chunk: break
+                    part_number = len(parts) + 1
+                    result = remote('PUT', f"{start_path}/{started['uploadId']}/{part_number}", content=chunk,
+                                    headers={'Content-Type': 'application/octet-stream'})
+                    parts.append({'partNumber': part_number, 'etag': result['etag']})
+                    with progress_lock:
+                        uploaded_bytes += len(chunk)
+                        _publish_update(publish_id, progress=round(uploaded_bytes * 100 / max(total_bytes, 1)))
+            remote('POST', f"{start_path}/{started['uploadId']}/complete", json={'parts': parts})
+            with progress_lock:
+                done = _publish_jobs[publish_id].get('filesDone', 0) + 1
+                _publish_update(publish_id, filesDone=done)
+
+        with ThreadPoolExecutor(max_workers=min(3, len(files))) as pool:
+            futures = [pool.submit(upload_one, clip, path) for clip, path in files]
+            for future in as_completed(futures): future.result()
+        result = remote('POST', f'/clipping/processor/local-batches/{batch_id}/complete', json={})
+        _publish_update(publish_id, status='completed', stage='Clips are ready in the Studio bulk uploader', progress=100, jobId=result['jobId'])
+    except Exception as error:
+        message = str(error)
+        try:
+            response = getattr(error, 'response', None)
+            if response is not None:
+                message = response.json().get('message') or f'Studio returned HTTP {response.status_code}.'
+        except (ValueError, AttributeError):
+            pass
+        _publish_update(publish_id, status='failed', stage='Upload stopped', error=message[:400])
+
+@server.app.post('/api/local-publish/{jid}')
+def start_local_publish(jid: str):
+    job = server._job_or_404(jid)
+    if job.get('status') != 'done':
+        raise HTTPException(409, 'Wait for this video’s clipping job to finish first.')
+    ready = [clip for clip in job.get('clips', []) if clip.get('status') == 'done']
+    if not ready:
+        raise HTTPException(409, 'This video has no finished clips to upload.')
+    files = []
+    total_bytes = 0
+    for clip in ready:
+        path = (Path(job['dir']) / 'clips' / clip['file']).resolve()
+        if not path.is_relative_to(Path(job['dir']).resolve()) or not path.is_file() or path.suffix.lower() != '.mp4':
+            raise HTTPException(400, 'A finished clip file is missing or invalid.')
+        total_bytes += path.stat().st_size
+        tags = clip.get('hashtags') or clip.get('tags') or []
+        if isinstance(tags, str): tags = [tag.lstrip('#') for tag in tags.split() if tag.startswith('#')]
+        files.append(({'id': clip['id'], 'title': str(clip.get('title') or clip.get('hook') or 'Clip')[:100],
+                       'description': str(clip.get('description') or '')[:2200],
+                       'hashtags': [str(tag).lstrip('#') for tag in tags if isinstance(tag, str)][:8],
+                       'start': clip['start'], 'end': clip['end']}, path))
+    publish_id = str(uuid.uuid4())
+    state = {'id': publish_id, 'status': 'uploading', 'stage': 'Starting secure upload', 'progress': 0,
+             'filesDone': 0, 'filesTotal': len(files), 'error': ''}
+    with _publish_lock: _publish_jobs[publish_id] = state
+    threading.Thread(target=_upload_local_batch, args=(publish_id, job, files, total_bytes), daemon=True).start()
+    return {'publishId': publish_id, **_publish_status(publish_id)}
+
+@server.app.get('/api/local-publish/{publish_id}')
+def get_local_publish_status(publish_id: str):
+    return _publish_status(publish_id)
 
 
 def local_page(name, shared=False):

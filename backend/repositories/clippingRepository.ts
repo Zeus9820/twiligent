@@ -19,6 +19,14 @@ redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[4]); redis.call('ZADD',KEYS[2],ARGV[2
             if (inserted === -1) throw new ConflictError('Five videos are already queued. Wait for a job to finish.');
             return this.get(user, job.id);
         },
+        async createReady(user: string, job: ClipJob) {
+            const p = clippingKey(user);
+            const prefix = `${user}/clipping/local-batches/${job.id}/`;
+            const raw = await db().eval<unknown[], string>(`local old=redis.call('GET',KEYS[1]); if old then local j=cjson.decode(old); if j.source and j.source.key and string.find(j.source.key,ARGV[5],1,true)==1 then return old end; return '' end
+redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[4]); redis.call('ZADD',KEYS[2],ARGV[2],ARGV[3]); redis.call('EXPIRE',KEYS[2],ARGV[4]); return ARGV[1]`, [`${p}:job:${job.id}`, `${p}:jobs`], [JSON.stringify(job), Date.parse(job.createdAt), job.id, TTL, prefix]);
+            if (!raw) throw new ConflictError('A Studio job already uses this upload batch ID.');
+            return normalize(JSON.parse(raw) as ClipJob);
+        },
         async get(user: string, id: string) {
             const job = await db().get<ClipJob>(`${clippingKey(user)}:job:${id}`);
             if (!job) throw new NotFoundError('Clipping job not found.');

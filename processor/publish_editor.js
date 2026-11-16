@@ -1,15 +1,21 @@
 document.addEventListener('click', async event => {
-  const button = event.target.closest('#bulk-upload-clips');
+  const button = event.target.closest('[data-act="bulk-upload-job"]');
   if (!button || button.disabled) return;
   event.preventDefault();
-  const jobId = D.jid;
-  const status = document.querySelector('#bulk-upload-state');
+  const jobId = button.dataset.j;
+  const status = document.querySelector(`[data-bulk-state="${CSS.escape(jobId)}"]`);
   if (!jobId || !status) return;
+  const clipIds = [...document.querySelectorAll(`input[data-sel^="c:${CSS.escape(jobId)}:"]:checked`)]
+    .map(input => input.dataset.sel.split(':').slice(2).join(':'));
+  if (!clipIds.length) {
+    status.textContent = 'Select one or more finished clips using the checkboxes below.';
+    return;
+  }
   button.disabled = true;
-  button.textContent = 'Uploading clips…';
-  status.textContent = 'Preparing every finished clip for Studio.';
+  button.textContent = 'Uploading…';
+  status.textContent = `Preparing ${clipIds.length} selected clip${clipIds.length === 1 ? '' : 's'} for Studio.`;
   try {
-    const started = await send('/api/local-publish/' + encodeURIComponent(jobId), {});
+    const started = await send('/api/local-publish/' + encodeURIComponent(jobId), {clipIds});
     let result = started;
     while (result.status === 'uploading') {
       status.textContent = `${result.stage} · ${result.filesDone || 0} of ${result.filesTotal || 0} clips · ${result.progress || 0}%`;

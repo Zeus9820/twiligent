@@ -202,7 +202,13 @@ export function createYouTubeStudioService({ accounts, config, context }: { acco
                     'X-Upload-Content-Length': String(input.size),
                     'X-Upload-Content-Type': input.contentType,
                 },
-                body: JSON.stringify({ snippet: { title: input.title.trim(), description: input.description, categoryId: '22' }, status: { privacyStatus: input.privacyStatus } }),
+                body: JSON.stringify({
+                    snippet: {
+                        title: input.title.trim(), description: input.description, categoryId: '22',
+                        tags: [...new Set([...`${input.title}\n${input.description}`.matchAll(/#([\p{L}\p{N}_]+)/gu)].map(match => match[1]))].slice(0, 15),
+                    },
+                    status: { privacyStatus: input.privacyStatus, selfDeclaredMadeForKids: false },
+                }),
                 signal: context.signal,
             });
             const uploadUrl = response.headers.get('location');

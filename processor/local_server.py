@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import os
 from pathlib import Path
+import re
 import sys
 import threading
 import uuid
@@ -29,7 +30,7 @@ import httpx
 import uvicorn
 from fastapi.responses import HTMLResponse
 from fastapi import Body, HTTPException
-from studio import ai, config, jobs, render, server, transcribe
+from studio import accounts as account_service, ai, config, creators, jobs, render, server, transcribe
 from apple_acceleration import install as install_apple_acceleration
 install_apple_acceleration(render)
 from whisperkit_adapter import install as install_whisperkit
@@ -66,6 +67,7 @@ def local_flash(model, prompt, schema):
 # This UI uses the existing paired credential on the server, never a key in browser settings.
 _original_page = server._page
 _html = (config.ROOT / 'web' / 'index.html').read_text(encoding='utf-8')
+_html = _html.replace('c?.min_len ?? 15', 'c?.min_len ?? 30', 1)
 _html = _html.replace('<title>PeakCut</title>', '<title>Kratos Studio — Local Clipping</title>')
 _html = _html.replace('<img class="logo" src="/brand/logo-light.svg" alt="PeakCut">', '<strong style="font-size:18px;color:var(--frame-text)">Kratos Studio</strong>')
 _html = _html.replace('Welcome to PeakCut', 'Welcome to Kratos Studio Local')
@@ -89,13 +91,66 @@ _js_marker = '$("#clipdlg").addEventListener("close",'
 if _caption_marker not in _html or _dialog_marker not in _html or _js_marker not in _html:
     raise RuntimeError('Local caption editor could not be attached to the app page.')
 _html = _html.replace(_caption_marker, '<h3>Spoken captions</h3><p class="help">Correct each word; its timing stays the same.</p><div id="caption-words" class="help">Loading captions…</div><button class="btn" id="save-caption-words" type="button" disabled>Save captions and re-render</button>' + _caption_marker, 1)
-_bulk_marker = '<h3>Post it</h3>'
+_hashtag_marker = '<label class="f">Description<textarea data-f="description" rows="2">${esc(c.description)}</textarea></label>'
+if _hashtag_marker not in _html:
+    raise RuntimeError('Hashtag editor could not be attached to the local clip editor.')
+_html = _html.replace(_hashtag_marker, _hashtag_marker + '\n        <label class="f">Hashtags<textarea data-f="hashtags" rows="2">${esc((c.hashtags || []).map(tag => "#" + String(tag).replace(/^#+/, "")).join(" "))}</textarea><small class="sub">Edit the hashtags used in captions and YouTube titles.</small></label>', 1)
+_bulk_marker = '${j.clips.some(c => c.status === "done") ? `<button class="btn sm icon ghost" data-act="dlall"'
 if _bulk_marker not in _html:
-    raise RuntimeError('Bulk upload action could not be attached to the local clip editor.')
-_html = _html.replace(_bulk_marker, '<h3>Bulk upload</h3><p class="help">Send every finished clip from this video to Kratos Studio. Review them there and choose Instagram, YouTube, or both.</p><button class="btn primary" id="bulk-upload-clips" type="button" ${j.status === "done" && c.status === "done" ? "" : "disabled"}>Upload all finished clips</button><div id="bulk-upload-state" class="help" role="status"></div><h3>Post it</h3>', 1)
+    raise RuntimeError('Bulk upload action could not be attached to the local video card.')
+_bulk_button = '${j.status === "done" && j.clips.some(c => c.status === "done") ? `<button class="btn sm" data-act="bulk-upload-job" data-j="${j.id}" ${j.clips.filter(c => c.status === "done" && sel().has(`c:${j.id}:${c.id}`)).length ? "" : "disabled"}>Upload selected (${j.clips.filter(c => c.status === "done" && sel().has(`c:${j.id}:${c.id}`)).length})</button>` : ""}\n        <span class="sub" data-bulk-state="${j.id}" role="status"></span>\n        ${j.clips.some(c => c.status === "done") ? `<button class="btn sm icon ghost" data-act="dlall"'
+_html = _html.replace(_bulk_marker, _bulk_button, 1)
 _html = _html.replace(_dialog_marker, '  D.sig = sig;\n  if (full && c.status === "done") loadCaptionWords(j.id, c.id);\n  put($("#dposts"), postPills(c));', 1)
 _html = _html.replace(_js_marker, (ROOT / 'processor' / 'caption_editor.js').read_text(encoding='utf-8') + '\n' + _js_marker, 1)
 _html = _html.replace(_js_marker, (ROOT / 'processor' / 'publish_editor.js').read_text(encoding='utf-8') + '\n' + _js_marker, 1)
+
+# Use 30–60 seconds as the Mac app's default for new jobs and newly created creators.
+jobs.DEFAULTS['min_len'] = 30
+creators.DEFAULTS['min_len'] = 30
+
+_original_request_render = jobs.request_render
+def local_request_render(jid, cid, changes):
+    body = dict(changes)
+    if 'hashtags' in body:
+        raw_tags = body.pop('hashtags')
+        values = raw_tags if isinstance(raw_tags, list) else re.split(r'[,;\s]+', str(raw_tags))
+        tags = []
+        seen = set()
+        for value in values:
+            tag = re.sub(r'[^A-Za-z0-9_]', '', str(value).lstrip('#'))[:30]
+            if tag and tag.lower() not in seen:
+                seen.add(tag.lower()); tags.append(tag)
+            if len(tags) == 8: break
+        job = server._job_or_404(jid)
+        clip = next((clip for clip in job['clips'] if clip['id'] == cid), None)
+        if not clip: raise HTTPException(404, 'Clip not found.')
+        clip['hashtags'] = tags
+        jobs.save(job)
+    return _original_request_render(jid, cid, body)
+jobs.request_render = local_request_render
+
+_original_youtube_upload = account_service.youtube_upload
+def local_youtube_upload(acc, path, title, description, tags, privacy):
+    clean_tags = []
+    seen = set()
+    for value in tags if isinstance(tags, list) else []:
+        tag = re.sub(r'[^A-Za-z0-9_]', '', str(value).lstrip('#'))[:30]
+        if tag and tag.lower() not in seen:
+            seen.add(tag.lower()); clean_tags.append(tag)
+        if len(clean_tags) == 3: break
+    full_title = title.strip()[:100]
+    added = 0
+    for tag in clean_tags:
+        hashtag = '#' + tag
+        if hashtag.lower() in full_title.lower(): continue
+        suffix = ' ' + hashtag
+        if len(full_title) + len(suffix) > 100:
+            if added: continue
+            full_title = full_title[:100 - len(suffix)].rstrip()
+        full_title += suffix
+        added += 1
+    return _original_youtube_upload(acc, path, full_title[:100], description, tags, privacy)
+account_service.youtube_upload = local_youtube_upload
 
 _original_public = jobs.public
 def local_public(job):
@@ -223,11 +278,19 @@ def _upload_local_batch(publish_id, job, files, total_bytes):
         _publish_update(publish_id, status='failed', stage='Upload stopped', error=message[:400])
 
 @server.app.post('/api/local-publish/{jid}')
-def start_local_publish(jid: str):
+def start_local_publish(jid: str, body: dict = Body(...)):
     job = server._job_or_404(jid)
     if job.get('status') != 'done':
         raise HTTPException(409, 'Wait for this video’s clipping job to finish first.')
-    ready = [clip for clip in job.get('clips', []) if clip.get('status') == 'done']
+    clip_ids = body.get('clipIds') if isinstance(body, dict) else None
+    if not isinstance(clip_ids, list) or not clip_ids or any(not isinstance(cid, str) or not cid for cid in clip_ids):
+        raise HTTPException(400, 'Select at least one finished clip to upload.')
+    selected = set(clip_ids)
+    ready_clips = [clip for clip in job.get('clips', []) if clip.get('status') == 'done']
+    ready_ids = {clip.get('id') for clip in ready_clips}
+    if selected - ready_ids:
+        raise HTTPException(400, 'One or more selected clips are not finished or do not belong to this video.')
+    ready = [clip for clip in ready_clips if clip.get('id') in selected]
     if not ready:
         raise HTTPException(409, 'This video has no finished clips to upload.')
     files = []

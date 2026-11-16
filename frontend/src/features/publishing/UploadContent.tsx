@@ -26,6 +26,26 @@ import type { AppAccount } from '../../utils/formatters';
 
 type UploadMode = 'single' | 'bulk' | 'youtube';
 
+function youtubeTitleWithHashtags(title: string, tags: string[]): string {
+  let result = title.trim().slice(0, 100);
+  let added = 0;
+  const seen = new Set<string>();
+  for (const value of tags) {
+    const tag = value.replace(/^#+/, '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 30);
+    if (!tag || seen.has(tag.toLowerCase()) || new RegExp(`(^|\\s)#${tag}(?=\\s|$)`, 'i').test(result)) continue;
+    seen.add(tag.toLowerCase());
+    const suffix = ` #${tag}`;
+    if (result.length + suffix.length > 100) {
+      if (added) continue;
+      result = result.slice(0, 100 - suffix.length).trimEnd();
+    }
+    result += suffix;
+    added++;
+    if (added === 3) break;
+  }
+  return result;
+}
+
 export default function UploadContent() {
   const { accounts, showToast } = useAppContext();
   const cloudConfig = useMediaStorageConfig(accounts);
@@ -56,11 +76,14 @@ export default function UploadContent() {
         if (!clip) throw new Error('This clip is no longer available.');
         const blob = await api.downloadClip(jobId, clipId);
         if (!live) return;
+        const tags = (clip.hashtags || []).map(tag => tag.replace(/^#+/, ''));
+        const tagText = tags.map(tag => `#${tag}`).join(' ');
+        const text = [clip.description, tagText].filter(Boolean).join('\n\n');
         const target = importTarget.current.form;
         if (target.file) return;
         target.changeContentType('REELS');
         target.loadFile(new File([blob], `${clip.id}.mp4`, { type: 'video/mp4' }));
-        target.setYoutubeTitle(clip.title); target.setYoutubeDescription(clip.description); target.setField('caption', clip.description);
+        target.setYoutubeTitle(youtubeTitleWithHashtags(clip.title, tags)); target.setYoutubeDescription(text); target.setField('caption', text);
         importTarget.current.showToast('Clip loaded. Review its details and choose where to publish.');
       } catch (error) { if (live) setClipImportError((error as Error).message); }
       finally { if (live) setImportingClip(false); }
@@ -90,9 +113,10 @@ export default function UploadContent() {
         const clips = await Promise.all(job.clips.map(async clip => {
           const blob = await api.downloadClip(jobId, clip.id);
           if (active) setImportProgress(`Loading clips: ${++finished} of ${job.clips.length}`);
-          const tags = (clip.hashtags || []).map(tag => `#${tag.replace(/^#+/, '')}`).join(' ');
+          const hashtags = (clip.hashtags || []).map(tag => tag.replace(/^#+/, ''));
+          const tags = hashtags.map(tag => `#${tag}`).join(' ');
           const text = [clip.description, tags].filter(Boolean).join('\n\n');
-          return { file: new File([blob], `${clip.id}.mp4`, { type: 'video/mp4' }), title: clip.title, description: text, caption: text };
+          return { file: new File([blob], `${clip.id}.mp4`, { type: 'video/mp4' }), title: youtubeTitleWithHashtags(clip.title, hashtags), description: text, caption: text };
         }));
         if (!active) return;
         importedJob.current = jobId;

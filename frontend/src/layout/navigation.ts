@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send, MessageSquareReply, Users, Settings,
+  LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send, MessageSquareReply, MessageCircle, Users, Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -50,6 +50,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Manage',
     items: [
+      { path: '/comments',   label: 'Comments',   icon: MessageCircle },
       { path: '/accounts', label: 'Accounts', icon: Users },
       { path: '/settings', label: 'Settings', icon: Settings },
     ],

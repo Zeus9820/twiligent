@@ -19,6 +19,7 @@ const ReelsExplorer      = lazy(() => import('./features/analytics/reels/ReelsEx
 const UploadContent      = lazy(() => import('./features/publishing/UploadContent'));
 const ClippingStudio     = lazy(() => import('./features/clipping/ClippingStudio'));
 const Automations        = lazy(() => import('./features/automations/Automations'));
+const InstagramComments  = lazy(() => import('./features/comments/InstagramComments'));
 const AccountManager     = lazy(() => import('./features/accounts/AccountManager'));
 const Settings           = lazy(() => import('./features/settings/Settings'));
 const RedditAnalytics    = lazy(() => import('./features/analytics/reddit/RedditAnalytics'));
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
       { path: 'upload',        element: <UploadContent /> },
       { path: 'automations',   element: <Automations /> },
       { path: 'clipping',      element: <ClippingStudio /> },
+      { path: 'comments',      element: <InstagramComments /> },
       { path: 'accounts',           element: <AccountManager /> },
       { path: 'settings',           element: <Settings /> },
       { path: 'reddit/:id',         element: <RedditAnalytics /> },

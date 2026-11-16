@@ -4,7 +4,7 @@ import {
     getInstagramAccountViews, getChannelAnalytics, getChannelVideos, getComparison, getVideoLibrary, getInstagramAnalytics, getInstagramMedia,
 } from '../controllers/analyticsController.ts';
 import type { AppEnv } from '../types/app.ts';
-import { getManagedVideo, listManagedVideos, editManagedVideo, deleteManagedVideo, getYouTubeStudioUrl, getYouTubeStudioSummary, startYouTubeShortUpload } from '../controllers/youtubeStudioController.ts';
+import { getManagedVideo, listManagedVideos, editManagedVideo, deleteManagedVideo, getYouTubeStudioUrl, getYouTubeStudioSummary, startYouTubeShortUpload, uploadYouTubeShortChunk } from '../controllers/youtubeStudioController.ts';
 
 const router = new Hono<AppEnv>();
 router.get('/accounts/:id/ig-management', ...instagramMediaCapabilities);
@@ -19,6 +19,7 @@ router.get('/accounts/:id/analytics', ...getChannelAnalytics);
 router.get('/accounts/:id/youtube-studio/connect', ...getYouTubeStudioUrl);
 router.get('/accounts/:id/youtube-studio', ...getYouTubeStudioSummary);
 router.post('/accounts/:id/youtube-studio/short-uploads', ...startYouTubeShortUpload);
+router.put('/youtube-studio/short-uploads/:sessionId', ...uploadYouTubeShortChunk);
 router.get('/accounts/:id/videos', ...getChannelVideos);
 router.get('/comparison', ...getComparison);
 router.get('/videos/all', ...getVideoLibrary);

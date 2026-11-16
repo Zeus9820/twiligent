@@ -9,10 +9,19 @@ const PUBLISH_MEDIA_TYPES: InstagramPublishMediaType[] = ['IMAGE', 'VIDEO', 'REE
 export interface ContainerInput {
     containerId: string;
     mediaUrls: string[];
+    mediaUrl?: string;
+    caption?: string;
+    mediaType?: string;
 }
 
 export interface ContainerStatusQuery {
     accountId: string;
+}
+
+export interface FacebookPageRetryInput { mediaUrl: string; caption: string }
+
+export function parseFacebookPageRetryInput(body: Fields): FacebookPageRetryInput {
+    return { mediaUrl: requiredString(body, 'mediaUrl', 'A hosted video URL is required.'), caption: optionalString(body, 'caption') || '' };
 }
 
 export interface YouTubeShortUploadInput {
@@ -87,6 +96,9 @@ export function parseContainerInput(body: Fields): ContainerInput {
     return {
         containerId: requiredString(body, 'containerId', 'containerId is required'),
         mediaUrls: optionalArray(body, 'mediaUrls', isString, 'media URLs') ?? [],
+        mediaUrl: optionalString(body, 'mediaUrl'),
+        caption: optionalString(body, 'caption'),
+        mediaType: optionalString(body, 'mediaType'),
     };
 }
 

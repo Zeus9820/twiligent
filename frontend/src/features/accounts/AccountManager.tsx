@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
@@ -14,17 +14,30 @@ import { useInstagramOAuthReturn } from './useInstagramOAuthReturn';
 import AccountsEmptyState from './AccountsEmptyState';
 import AccountSection from './AccountSection';
 import AddAccountDialog from './AddAccountDialog';
+import { api } from '../../services/api';
 
 export default function AccountManager() {
   const { accounts, showToast, loadAccounts } = useAppContext();
   const addFlow = useAddAccount({ showToast, loadAccounts });
   const { refreshingId, refreshOne, refreshAll } = useAccountRefresh({ showToast, loadAccounts });
   const { pendingDelete, setPendingDelete, deleting, handleDelete } = useAccountDelete({ showToast, loadAccounts });
+  const [connectingFacebookId, setConnectingFacebookId] = useState<string | null>(null);
   useInstagramOAuthReturn({ showToast, loadAccounts, setDialogOpen: addFlow.setDialogOpen });
 
   const groups = groupByPlatform(accounts);
   const sections = visibleSections(groups);
   const refreshingAll = refreshingId === 'all';
+
+  const connectFacebook = async (accountId: string) => {
+    setConnectingFacebookId(accountId);
+    try {
+      const { url } = await api.getFacebookPageAuthUrl(accountId);
+      window.location.href = url;
+    } catch (error) {
+      showToast(`Couldn't start Facebook Page connection. ${(error as Error).message}`, 'error');
+      setConnectingFacebookId(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -58,6 +71,8 @@ export default function AccountManager() {
             refreshingId={refreshingId}
             onRefresh={refreshOne}
             onDelete={setPendingDelete}
+            onConnectFacebook={acct => { void connectFacebook(acct.id); }}
+            connectingFacebookId={connectingFacebookId}
           />
         ))
       )}

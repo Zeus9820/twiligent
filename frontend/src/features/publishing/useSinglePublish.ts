@@ -19,7 +19,7 @@ export interface SinglePublishOptions {
 interface SinglePublishRun extends SinglePublishOptions {
   progress: PublishProgressState;
   setUploading: (uploading: boolean) => void;
-  destinationResults: Map<string, { instagram?: string; youtube?: string }>;
+  destinationResults: Map<string, { instagram?: string; instagramFacebookError?: string; instagramMediaUrl?: string; instagramCaption?: string; youtube?: string }>;
 }
 
 function beginRun(run: SinglePublishRun): void {
@@ -66,18 +66,19 @@ async function publishNow(run: SinglePublishRun): Promise<void> {
     let instagramProgress = 0;
     let youtubeProgress = 0;
     const updateCombinedProgress = () => progress.setUploadProgress(Math.round((instagramProgress + youtubeProgress) / destinations));
-    const jobs: Array<Promise<{ platform: 'instagram' | 'youtube'; id: string }>> = [];
+    const jobs: Array<Promise<{ platform: 'instagram' | 'youtube'; id: string; facebookError?: string }>> = [];
     const resultKey = `${form.file.name}:${form.file.size}:${form.file.lastModified}:${form.selectedAccount}:${form.youtubeAccount}`;
     const previous = run.destinationResults.get(resultKey) || {};
-    const saveResult = (platform: 'instagram' | 'youtube', id: string) => {
+    const saveResult = (platform: 'instagram' | 'youtube', id: string, facebookError?: string) => {
       const current = run.destinationResults.get(resultKey) || {};
-      run.destinationResults.set(resultKey, { ...current, [platform]: id });
+      run.destinationResults.set(resultKey, { ...current, [platform]: id, ...(platform === 'instagram' && facebookError ? { instagramFacebookError: facebookError } : {}) });
     };
     if (form.publishInstagram && form.selectedAccount && !previous.instagram) {
       const instagramSetters = { ...progress, setUploadProgress: (value: number) => { instagramProgress = value; updateCombinedProgress(); } };
-      jobs.push(publishSinglePost(form, run.cloudConfig, instagramSetters).then(id => {
-        saveResult('instagram', id);
-        return { platform: 'instagram' as const, id };
+      jobs.push(publishSinglePost(form, run.cloudConfig, instagramSetters).then(({ mediaId, mediaUrl, caption, facebookError }) => {
+        const current = run.destinationResults.get(resultKey) || {};
+        run.destinationResults.set(resultKey, { ...current, instagram: mediaId, instagramMediaUrl: mediaUrl, instagramCaption: caption, ...(facebookError ? { instagramFacebookError: facebookError } : {}) });
+        return { platform: 'instagram' as const, id: mediaId, facebookError };
       }));
     }
     if (form.youtubeAccount && !previous.youtube) {
@@ -105,14 +106,15 @@ async function publishNow(run: SinglePublishRun): Promise<void> {
     }
     const instagram = succeeded.find(result => result.platform === 'instagram');
     const youtube = succeeded.find(result => result.platform === 'youtube');
+    const facebookError = instagram?.facebookError || previous.instagramFacebookError;
     const mediaId = instagram?.id || '';
     progress.setPublishStatus('done');
     progress.setPublishedMediaId(mediaId);
     progress.setPublishedYouTubeId(youtube?.id || null);
     const message = instagram && youtube ? 'Published to Instagram Reels and YouTube Shorts' : youtube ? 'Published to YouTube Shorts' : 'Published to Instagram Reels';
-    progress.setStatusMessage(message);
-    run.showToast(message);
-    run.destinationResults.delete(resultKey);
+    progress.setStatusMessage(facebookError ? `${message}. Facebook share failed: ${facebookError}` : message);
+    run.showToast(facebookError ? `${message}, but Facebook failed: ${facebookError}` : message, facebookError ? 'warning' : 'success');
+    if (!facebookError) run.destinationResults.delete(resultKey);
   } catch (err) {
     failRun(run, err as Error, 'Publishing failed');
   } finally {
@@ -123,7 +125,24 @@ async function publishNow(run: SinglePublishRun): Promise<void> {
 export function useSinglePublish({ form, cloudConfig, showToast, onScheduled }: SinglePublishOptions) {
   const progress = usePublishProgress();
   const [uploading, setUploading] = useState(false);
-  const destinationResults = useRef(new Map<string, { instagram?: string; youtube?: string }>());
+  const destinationResults = useRef(new Map<string, { instagram?: string; instagramFacebookError?: string; instagramMediaUrl?: string; instagramCaption?: string; youtube?: string }>());
+
+  const retryFacebookShare = async () => {
+    const entry = [...destinationResults.current.entries()].find(([, value]) => value.instagramFacebookError && value.instagramMediaUrl && value.instagram);
+    if (!entry || !form.selectedAccount) return;
+    const [key, value] = entry;
+    try {
+      await api.retryFacebookPagePublish(form.selectedAccount, value.instagramMediaUrl as string, value.instagramCaption || '');
+      destinationResults.current.delete(key);
+      showToast('Facebook Reel published');
+      progress.setStatusMessage('Published to Instagram Reels and Facebook');
+    } catch (err) {
+      const message = (err as Error).message;
+      destinationResults.current.set(key, { ...value, instagramFacebookError: message });
+      progress.setStatusMessage(`Instagram is published. Facebook share failed: ${message}`);
+      showToast(`Facebook share failed: ${message}`, 'warning');
+    }
+  };
 
   // reads the form as it is at the moment of the click
   const handlePublish = async () => {
@@ -140,7 +159,8 @@ export function useSinglePublish({ form, cloudConfig, showToast, onScheduled }: 
     await publishNow(run);
   };
 
-  return { ...progress, uploading, handlePublish };
+  const facebookShareError = [...destinationResults.current.values()].find(value => value.instagramFacebookError)?.instagramFacebookError || null;
+  return { ...progress, uploading, handlePublish, retryFacebookShare, facebookShareError };
 }
 
 export type SinglePublish = ReturnType<typeof useSinglePublish>;

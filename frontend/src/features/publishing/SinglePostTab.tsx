@@ -27,6 +27,8 @@ export default function SinglePostTab({ form, publish, igAccounts, youtubeAccoun
         selectedAcct={selectedAcct}
         scheduleMode={form.fields.scheduleMode}
         onReset={onReset}
+        facebookShareError={publish.facebookShareError}
+        onRetryFacebookShare={publish.retryFacebookShare}
       />
     );
   }

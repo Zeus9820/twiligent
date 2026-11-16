@@ -6,6 +6,7 @@ const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
 const DEV_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
 const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 const CALLBACK_PATH = '/api/auth/instagram/callback';
+const FACEBOOK_CALLBACK_PATH = '/api/auth/facebook/callback';
 // Resend's free plan sends 100 emails a day
 const DEFAULT_EMAIL_DAILY_LIMIT = 100;
 // Instagram allows 750 private replies an hour per account for posts and reels; the default keeps well under it
@@ -51,6 +52,7 @@ export interface AppConfig {
     windsor?: { apiKey: string; ownerUserId: string };
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
+    facebook: { appId: string | undefined; appSecret: string | undefined; configId: string | undefined; tokenKey: string | undefined; redirectUri: string; frontendUrl: string };
     allowedOrigins: string[];
     authEmail: AuthEmailConfig;
     automation: AutomationConfig;
@@ -123,6 +125,19 @@ export function readInstagramOAuthConfig(env: Env): InstagramOAuthConfig {
     return config;
 }
 
+export function readFacebookConfig(env: Env): AppConfig['facebook'] {
+    const instagram = readInstagramOAuthConfig(env);
+    const backendUrl = cleanUrl(env.BACKEND_URL, DEFAULT_BACKEND_URL).replace(/\/$/, '');
+    return {
+        appId: instagram.appId,
+        appSecret: instagram.appSecret,
+        configId: cleanSecret(env.FACEBOOK_LOGIN_CONFIG_ID),
+        tokenKey: cleanSecret(env.FACEBOOK_PAGE_TOKEN_KEY),
+        redirectUri: `${backendUrl}${FACEBOOK_CALLBACK_PATH}`,
+        frontendUrl: instagram.frontendUrl,
+    };
+}
+
 // a missing, malformed or non-positive limit falls back to the default rather than stopping every email
 function dailyLimitOf(value: string | undefined): number {
     const limit = Number(cleanSecret(value));
@@ -177,6 +192,7 @@ export function readConfig(env: Env): AppConfig {
         ...(windsorKey && windsorOwner ? { windsor: { apiKey: windsorKey, ownerUserId: windsorOwner } } : {}),
         youtubeApiKey: cleanSecret(env.YOUTUBE_API_KEY),
         instagram: readInstagramOAuthConfig(env),
+        facebook: readFacebookConfig(env),
         allowedOrigins: allowedOrigins(env),
         authEmail: readAuthEmailConfig(env),
         automation: readAutomationConfig(env),

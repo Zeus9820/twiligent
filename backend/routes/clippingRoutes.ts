@@ -103,7 +103,8 @@ clippingPublicRoutes.post('/clipping/processor/jobs/:id/progress', async c => {
             const start = Number(item.start), end = Number(item.end);
             if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end - start > job.options.maxSeconds + 1) throw new ValidationError('Invalid clip duration.');
             if (!await storage(c).head(key)) throw new ValidationError('A rendered clip has not finished uploading.');
-            clips.push({ id: String(item.id), title: String(item.title || 'Clip').slice(0, 100), description: String(item.description || '').slice(0, 2200), start, end, key, url: urlFor(c, key) });
+            const hashtags = Array.isArray(item.hashtags) ? item.hashtags.filter((tag): tag is string => typeof tag === 'string').map(tag => tag.replace(/[^\p{L}\p{N}_]/gu, '').slice(0, 40)).filter(Boolean).slice(0, 8) : [];
+            clips.push({ id: String(item.id), title: String(item.title || 'Clip').slice(0, 100), description: String(item.description || '').slice(0, 2200), hashtags, start, end, key, url: urlFor(c, key) });
         }
         patch.status = 'completed'; patch.progress = 1; patch.clips = clips;
     }

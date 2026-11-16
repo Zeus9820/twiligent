@@ -31,6 +31,8 @@ export interface OAuthReturn {
   reconnected: boolean;
   errorMessage: string | null;
   openAdd: boolean;
+  facebookConnected: boolean;
+  facebookErrorMessage: string | null;
 }
 
 const IG_ERRORS: Record<string, string> = {
@@ -62,13 +64,17 @@ export function readOAuthReturn(searchParams: URLSearchParams): OAuthReturn | nu
   const connected = searchParams.get('ig_connected');
   const igError = searchParams.get('ig_error');
   const add = searchParams.get('add');
-  if (!connected && !igError && !add) return null;
+  const facebookConnected = searchParams.get('fb_connected') === 'true';
+  const facebookErrorMessage = searchParams.get('fb_error');
+  if (!connected && !igError && !add && !facebookConnected && !facebookErrorMessage) return null;
 
   return {
     connected: connected === 'true' || connected === 'reconnected',
     reconnected: connected === 'reconnected',
     errorMessage: igError ? instagramErrorMessage(igError) : null,
     openAdd: Boolean(add),
+    facebookConnected,
+    facebookErrorMessage,
   };
 }
 

@@ -192,6 +192,8 @@ export interface InstagramMediaPublishRequest {
 export interface InstagramMediaPublishResponse {
     success: true;
     mediaId: string;
+    facebookMediaId?: string;
+    facebookError?: string;
 }
 
 // one entry of the Graph API content_publishing_limit edge, passed through unchanged

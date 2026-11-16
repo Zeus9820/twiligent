@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Lock, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowUpRight, Globe, Lock, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AccountAvatar } from '@/components/platform';
@@ -21,6 +21,8 @@ export interface AccountCardProps {
   refreshing: boolean;
   onRefresh: () => void;
   onDelete: () => void;
+  onConnectFacebook?: () => void;
+  connectingFacebook?: boolean;
 }
 
 function CookieStatus({ hasCookie }: CookieStatusProps) {
@@ -30,7 +32,7 @@ function CookieStatus({ hasCookie }: CookieStatusProps) {
   return <span className="flex items-center gap-1 text-danger"><Lock className="size-3" />Error: no session cookie. Remove and add the account again.</span>;
 }
 
-export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete }: AccountCardProps) {
+export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete, onConnectFacebook, connectingFacebook }: AccountCardProps) {
   const metrics = accountMetrics(platform, acct);
   return (
     <article className="flex flex-col gap-4 rounded-card border border-line bg-surface-raised p-4">
@@ -59,8 +61,16 @@ export default function AccountCard({ acct, platform, refreshing, onRefresh, onD
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-ink-faint">
         {platform === 'reddit' && <CookieStatus hasCookie={acct.hasCookie} />}
+        {platform === 'instagram' && acct.facebookPageName && <span className="flex items-center gap-1"><Globe className="size-3" />Facebook Page: {acct.facebookPageName}</span>}
         {acct.lastUpdated && <span>Updated {timeAgo(acct.lastUpdated).toLowerCase()}</span>}
       </div>
+
+      {platform === 'instagram' && !acct.facebookPageName && onConnectFacebook && (
+        <Button variant="outline" size="sm" onClick={onConnectFacebook} disabled={connectingFacebook}>
+          <Globe data-icon="inline-start" />
+          {connectingFacebook ? 'Connecting Facebook Page' : 'Connect Facebook Page'}
+        </Button>
+      )}
 
       <div className="mt-auto flex gap-2">
         <Button variant="outline" size="sm" className="flex-1" onClick={onRefresh} disabled={refreshing}>

@@ -6,6 +6,7 @@ import authHookRoutes from './authHookRoutes.ts';
 import automationRoutes from './automationRoutes.ts';
 import analyticsRoutes from './analyticsRoutes.ts';
 import instagramAuthRoutes from './instagramAuthRoutes.ts';
+import instagramCommentRoutes from './instagramCommentRoutes.ts';
 import instagramWebhookRoutes from './instagramWebhookRoutes.ts';
 import overviewRoutes from './overviewRoutes.ts';
 import publishingRoutes from './publishingRoutes.ts';
@@ -16,6 +17,7 @@ import trackedContentRoutes from './trackedContentRoutes.ts';
 import { getHealth, getReadiness } from '../controllers/healthController.ts';
 import { handleInstagramCallback } from '../controllers/instagramAuthController.ts';
 import { handleYouTubeStudioCallback } from '../controllers/youtubeStudioController.ts';
+import { handleFacebookPageCallback } from '../controllers/facebookPageController.ts';
 import { rateLimit, clientIp } from '../middleware/rateLimit.ts';
 import { RATE_LIMIT_RULES } from '../lib/rateLimit/rules.ts';
 import type { AppEnv } from '../types/app.ts';
@@ -27,6 +29,7 @@ publicRoutes.get('/health', ...getHealth);
 publicRoutes.get('/health/ready', ...getReadiness);
 publicRoutes.get('/auth/instagram/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleInstagramCallback);
 publicRoutes.get('/auth/youtube/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleYouTubeStudioCallback);
+publicRoutes.get('/auth/facebook/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleFacebookPageCallback);
 publicRoutes.route('/', clippingPublicRoutes);
 publicRoutes.route('/', authHookRoutes);
 publicRoutes.route('/', instagramWebhookRoutes);
@@ -35,7 +38,7 @@ publicRoutes.route('/', instagramWebhookRoutes);
 export const protectedRoutes = new Hono<AppEnv>();
 for (const routes of [
     clippingRoutes, aiRoutes, accountRoutes, analyticsRoutes, redditRoutes, publishingRoutes, scheduledPostRoutes, trackedContentRoutes,
-    overviewRoutes, settingsRoutes, instagramAuthRoutes, automationRoutes,
+    overviewRoutes, settingsRoutes, instagramAuthRoutes, instagramCommentRoutes, automationRoutes,
 ]) {
     protectedRoutes.route('/', routes);
 }

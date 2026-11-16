@@ -67,6 +67,29 @@ _html = _html.replace('<title>PeakCut</title>', '<title>Kratos Studio — Local 
 _html = _html.replace('<img class="logo" src="/brand/logo-light.svg" alt="PeakCut">', '<strong style="font-size:18px;color:var(--frame-text)">Kratos Studio</strong>')
 _html = _html.replace('Welcome to PeakCut', 'Welcome to Kratos Studio Local')
 _html = _html.replace('Long videos and live streams go in, captioned vertical clips come out.', 'Your videos stay on this Mac. Flash analysis uses your existing Cloudflare connection.')
+_job_progress_line = '${busy ? `<div class="bar"><i style="width:${Math.round(j.progress * 100)}%"></i></div><p class="sub">${esc(j.stage)} · ${Math.round(j.progress * 100)}%</p>` : ""}'
+_diagnostics = r'''<div class="local-diagnostics" style="margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:12px" aria-label="Processing details">
+      <b>Processing details</b>
+      <p class="sub" style="margin:7px 0">Step: ${esc(j.stage || "Waiting")} · Overall: ${Math.round((j.progress || 0) * 100)}%</p>
+      <p class="sub" style="margin:7px 0">Clips: ${j.clips.filter(c => c.status === "done").length} ready · ${j.clips.filter(c => c.status === "rendering").length} rendering · ${j.clips.filter(c => c.status === "queued").length} waiting${j.clips.some(c => c.status === "error") ? ` · ${j.clips.filter(c => c.status === "error").length} failed` : ""}</p>
+      <p class="sub" style="margin:7px 0">${busy ? `Elapsed since queued: ${fmt(Math.max(0, Date.now()/1000 - j.created))}` : j.took ? `Processing time: ${fmt(j.took)}` : ""}${j.local_updated ? ` · Last saved: ${fmt(Math.max(0, Date.now()/1000 - j.local_updated))} ago` : ""}</p>
+      <p class="sub" style="margin:7px 0">${j.status === "queued" ? "Waiting for the Mac processing slot; another job may be using it." : j.status === "error" ? "Review the error below and try again after resolving it." : /finish|render/i.test(j.stage) ? "Up to three clips can render at once. Preparing speech and captions may still take time." : /transcri|writing|reading/i.test(j.stage) ? "Preparing the transcript and word timings." : /finding/i.test(j.stage) ? "AI is selecting moments from the transcript." : j.status === "done" ? "Processing finished. Ready clips can be opened below." : "Keep your Mac awake while processing."}</p>
+      ${j.ai?.note ? `<p class="sub" style="margin:7px 0">AI: ${esc(j.ai.note)}</p>` : ""}
+      ${j.clips.filter(c => c.status === "error").map(c => `<p class="err">${esc(c.title || c.id)}: ${esc(c.error || "Rendering failed")}</p>`).join("")}
+    </div>'''
+if _job_progress_line not in _html:
+    raise RuntimeError('Local processing details could not be attached to the app page.')
+_html = _html.replace(_job_progress_line, _job_progress_line + '\n    ' + _diagnostics, 1)
+
+_original_public = jobs.public
+def local_public(job):
+    result = _original_public(job)
+    try:
+        result['local_updated'] = (Path(job['dir']) / 'job.json').stat().st_mtime
+    except (KeyError, OSError):
+        pass
+    return result
+jobs.public = local_public
 
 
 def local_page(name, shared=False):
@@ -76,7 +99,7 @@ def local_page(name, shared=False):
 
 
 server._page = local_page
-_render_slot = threading.BoundedSemaphore(1)
+_render_slot = threading.BoundedSemaphore(3)
 _original_render = render.render_clip
 
 

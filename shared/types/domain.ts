@@ -61,6 +61,9 @@ export interface Account {
     mediaCount?: number;
     accessToken?: string;
     tokenExpiresAt?: string | null;
+    facebookPageId?: string;
+    facebookPageName?: string;
+    encryptedFacebookPageAccessToken?: string;
 
     // reddit
     totalKarma?: number;
@@ -79,7 +82,7 @@ export interface Account {
 export type NewAccount = Omit<Account, 'platform'> & { platform?: Platform };
 
 // what an account looks like in a response: secrets removed, cookie presence kept
-export type SafeAccount = Omit<Account, 'accessToken' | 'cookie' | 'encryptedPassword' | 'encryptedTotpSecret' | 'authToken' | 'ct0' | 'encryptedYouTubeRefreshToken'> & {
+export type SafeAccount = Omit<Account, 'accessToken' | 'encryptedFacebookPageAccessToken' | 'cookie' | 'encryptedPassword' | 'encryptedTotpSecret' | 'authToken' | 'ct0' | 'encryptedYouTubeRefreshToken'> & {
     hasCookie: boolean;
 };
 

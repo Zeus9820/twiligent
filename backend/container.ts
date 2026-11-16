@@ -15,6 +15,9 @@ import { createAccountService } from './services/accountService.ts';
 import { createYouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import { createYouTubeStudioService } from './services/youtubeStudioService.ts';
 import { createInstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
+import { createInstagramInboxRepository } from './repositories/instagramInboxRepository.ts';
+import { createInstagramInboxService, type InstagramInboxService } from './services/instagramInboxService.ts';
+import { createInstagramCommentInboxService } from './services/instagramCommentInboxService.ts';
 import { createRedditAnalyticsService } from './services/redditAnalyticsService.ts';
 import { createPublishingService } from './services/publishingService.ts';
 import { createScheduledPublisher } from './services/scheduledPublisher.ts';
@@ -24,6 +27,7 @@ import { createTrackedContentService } from './services/trackedContentService.ts
 import { createOverviewService } from './services/overviewService.ts';
 import { createSettingsService } from './services/settingsService.ts';
 import { createInstagramConnectService } from './services/instagramConnectService.ts';
+import { createFacebookPageService } from './services/facebook/facebookPage.ts';
 import { createAuthEmailService } from './services/authEmailService.ts';
 import { createAutomationService } from './services/automationService.ts';
 import { createAutomationWebhookService } from './services/automationWebhookService.ts';
@@ -38,6 +42,7 @@ import type { HealthService } from './services/healthService.ts';
 import type { YouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import type { YouTubeStudioService } from './services/youtubeStudioService.ts';
 import type { InstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
+import type { InstagramCommentInboxService } from './services/instagramCommentInboxService.ts';
 import type { RedditAnalyticsService } from './services/redditAnalyticsService.ts';
 import type { PublishingService } from './services/publishingService.ts';
 import type { ScheduledPublisher } from './services/scheduledPublisher.ts';
@@ -47,6 +52,7 @@ import type { TrackedContentService } from './services/trackedContentService.ts'
 import type { OverviewService } from './services/overviewService.ts';
 import type { SettingsService } from './services/settingsService.ts';
 import type { InstagramConnectService } from './services/instagramConnectService.ts';
+import type { FacebookPageService } from './services/facebook/facebookPage.ts';
 import type { AuthEmailService } from './services/authEmailService.ts';
 import type { AutomationService } from './services/automationService.ts';
 import type { AutomationWebhookService } from './services/automationWebhookService.ts';
@@ -72,6 +78,8 @@ export interface Services {
     youtubeAnalytics: YouTubeAnalyticsService;
     youtubeStudio: YouTubeStudioService;
     instagramAnalytics: InstagramAnalyticsService;
+    instagramComments: InstagramCommentInboxService;
+    instagramInbox: InstagramInboxService;
     redditAnalytics: RedditAnalyticsService;
     publishing: PublishingService;
     scheduledPosts: ScheduledPostService;
@@ -81,6 +89,7 @@ export interface Services {
     overview: OverviewService;
     settings: SettingsService;
     instagramConnect: InstagramConnectService;
+    facebookPage: FacebookPageService;
     authEmail: AuthEmailService;
     automations: AutomationService;
     automationWebhook: AutomationWebhookService;
@@ -96,6 +105,7 @@ export interface Services {
 export function createServices(clients: Clients, config: AppConfig, context: RequestContext, env?: Env): Services {
     const accounts = createAccountRepository(clients.supabase);
     const cache = createAnalyticsCacheRepository(clients.redis);
+    const inbox = createInstagramInboxRepository(clients.redis);
     const posts = createScheduledPostRepository(clients.supabase);
     const tracked = createTrackedPostRepository(clients.supabase);
     const settings = createSettingsRepository(clients.supabase);
@@ -112,6 +122,8 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         youtubeAnalytics: createYouTubeAnalyticsService({ accounts, cache, config, context }),
         youtubeStudio: createYouTubeStudioService({ accounts, config, context }),
         instagramAnalytics: createInstagramAnalyticsService({ accounts, cache, context, config }),
+        instagramInbox: createInstagramInboxService({ accounts, inbox, context }),
+        instagramComments: createInstagramCommentInboxService({ accounts, cache, context, ai: env?.AI, inbox }),
         redditAnalytics: createRedditAnalyticsService({ accounts, cache, context }),
         publishing: createPublishingService({ accounts, config, context, redis: clients.redis }),
         scheduledPosts: createScheduledPostService({ accounts, posts, publisher: scheduledPublisher }),
@@ -121,6 +133,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         overview: createOverviewService({ accounts, tracked, cache, config }),
         settings: createSettingsService({ settings, config }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),
+        facebookPage: createFacebookPageService({ accounts, audit, config, context }),
         authEmail: createAuthEmailService({ quota: createEmailQuotaRepository(clients.rateLimitRedis), config, context }),
         automations: createAutomationService({ accounts, rules, comments, followups, publicReplies, automationAccounts, audit, automation, context }),
         automationWebhook: createAutomationWebhookService({ rules, comments, followups, automation, context }),

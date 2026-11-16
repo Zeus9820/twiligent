@@ -31,12 +31,14 @@ interface QueueTally {
   offset: number;
   succeeded: number;
   failed: number;
+  facebookFailed: number;
 }
 
 const CANCELLED = 'cancelled';
 const DONE = 'done';
 
 type ItemOutcome = typeof CANCELLED | typeof DONE;
+interface ProcessItemResult { outcome: ItemOutcome; facebookError?: string }
 const BETWEEN_FILES_MS = 2000;
 const PARALLEL_UPLOADS = 3;
 
@@ -48,30 +50,40 @@ async function scheduleItem(run: BulkRun, item: QueueItem, mediaUrl: string, off
   run.patchFile(item.id, { status: 'scheduled', progress: 100 });
 }
 
-async function publishItem(run: BulkRun, item: QueueItem, mediaUrl: string): Promise<ItemOutcome> {
+async function publishItem(run: BulkRun, item: QueueItem, mediaUrl: string): Promise<ProcessItemResult> {
   const { settings } = run;
   run.patchFile(item.id, { status: 'creating', progress: 100 });
   const { containerId } = await api.createIGContainer(settings.account, buildContainerPayload(bulkPostDetails(settings, item, mediaUrl)));
-  if (run.isCancelled()) return CANCELLED;
+  if (run.isCancelled()) return { outcome: CANCELLED };
   await waitUntilReady(settings.contentType, containerId, settings.account, {
     onProcessing: () => run.patchFile(item.id, { status: 'processing' }),
   });
-  if (run.isCancelled()) return CANCELLED;
+  if (run.isCancelled()) return { outcome: CANCELLED };
   run.patchFile(item.id, { status: 'publishing' });
-  const { mediaId } = await api.publishIGContainer(settings.account, containerId, [mediaUrl]);
-  run.patchFile(item.id, { status: 'done', mediaId });
-  return DONE;
+  const details = bulkPostDetails(settings, item, mediaUrl);
+  const result = await api.publishIGContainer(settings.account, containerId, [mediaUrl], {
+    mediaUrl,
+    caption: details.caption || '',
+    mediaType: settings.contentType,
+  });
+  run.patchFile(item.id, { status: result.facebookError ? 'error' : 'done', mediaId: result.mediaId, mediaUrl, error: result.facebookError ? `Instagram published. Facebook failed: ${result.facebookError}` : null });
+  return { outcome: DONE, facebookError: result.facebookError };
 }
 
-async function processItem(run: BulkRun, item: QueueItem, mediaUrl: string, offset: number): Promise<ItemOutcome> {
-  if (run.isCancelled()) return CANCELLED;
+async function processItem(run: BulkRun, item: QueueItem, mediaUrl: string, offset: number): Promise<ProcessItemResult> {
+  if (run.isCancelled()) return { outcome: CANCELLED };
   if (!run.settings.scheduleMode) {
+    if ((run.settings.publishInstagram ?? true) && run.settings.account && item.mediaId && item.error?.startsWith('Instagram published. Facebook failed:')) {
+      await api.retryFacebookPagePublish(run.settings.account, mediaUrl, item.caption);
+      run.patchFile(item.id, { status: 'done', error: null, progress: 100 });
+      return { outcome: DONE };
+    }
     if ((run.settings.publishInstagram ?? true) && run.settings.account && !item.mediaId) return publishItem(run, item, mediaUrl);
     run.patchFile(item.id, { status: 'done', progress: 100 });
-    return DONE;
+    return { outcome: DONE };
   }
   await scheduleItem(run, item, mediaUrl, offset);
-  return DONE;
+  return { outcome: DONE };
 }
 
 async function uploadQueue(run: BulkRun, files: QueueItem[]): Promise<{ failed: number; mediaUrls: Map<number, string> }> {
@@ -131,19 +143,22 @@ async function uploadQueue(run: BulkRun, files: QueueItem[]): Promise<{ failed: 
 // Media uploads run in parallel; Instagram containers are then published sequentially in queue order.
 async function runQueue(run: BulkRun, pendingFiles: QueueItem[]): Promise<QueueTally> {
   const upload = await uploadQueue(run, pendingFiles);
-  const tally: QueueTally = { offset: 0, succeeded: 0, failed: upload.failed };
+  const tally: QueueTally = { offset: 0, succeeded: 0, failed: upload.failed, facebookFailed: 0 };
   if (run.isCancelled()) return tally;
   const uploadedFiles = pendingFiles.filter(item => upload.mediaUrls.has(item.id));
   for (let i = 0; i < uploadedFiles.length; i++) {
     if (run.isCancelled()) break;
     const item = uploadedFiles[i];
     try {
-      const outcome = await processItem(run, item, upload.mediaUrls.get(item.id) as string, tally.offset);
-      if (outcome === CANCELLED) break;
+      const result = await processItem(run, item, upload.mediaUrls.get(item.id) as string, tally.offset);
+      if (result.facebookError) tally.facebookFailed++;
+      if (result.outcome === CANCELLED) break;
       if (run.settings.scheduleMode) tally.offset++;
       tally.succeeded++;
     } catch (err) {
-      run.patchFile(item.id, { status: 'error', error: (err as Error).message });
+      const message = (err as Error).message;
+      const facebookRetry = item.mediaId && item.error?.startsWith('Instagram published. Facebook failed:');
+      run.patchFile(item.id, { status: 'error', error: facebookRetry ? `Instagram published. Facebook failed: ${message}` : message });
       tally.failed++;
     }
     if (i < uploadedFiles.length - 1 && !run.isCancelled()) await wait(BETWEEN_FILES_MS);
@@ -178,7 +193,7 @@ export function useBulkPublish({ queue, settings, cloudConfig, showToast, onSche
       showToast('Bulk upload stopped. Files already processed keep their status.', 'warning');
       return;
     }
-    showToast(`Bulk upload finished: ${tally.succeeded} succeeded, ${tally.failed} failed`, tally.succeeded > 0 ? 'success' : 'error');
+    showToast(`Bulk upload finished: ${tally.succeeded} succeeded, ${tally.failed} failed${tally.facebookFailed ? `, ${tally.facebookFailed} Facebook shares failed. Press publish again to retry those shares.` : ''}`, tally.succeeded > 0 ? 'success' : 'error');
     if (settings.scheduleMode) onScheduled();
   };
 

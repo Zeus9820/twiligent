@@ -61,7 +61,7 @@ export async function scheduleSinglePost(
 
 export async function publishSinglePost(
   form: SinglePostInput, cloudConfig: MediaStorageConfig | null, progress: PublishProgressSetters,
-): Promise<string> {
+): Promise<{ mediaId: string; mediaUrl: string; caption: string; facebookError?: string }> {
   const uploaded = await uploadPostMedia(form, cloudConfig, progress);
   progress.setPublishStatus('creating-container');
   progress.setStatusMessage('Creating the Instagram media container');
@@ -76,6 +76,10 @@ export async function publishSinglePost(
   });
   progress.setPublishStatus('publishing');
   progress.setStatusMessage('Publishing to Instagram');
-  const { mediaId } = await api.publishIGContainer(form.selectedAccount, containerId, [uploaded.mediaUrl, uploaded.coverUrl].filter((url): url is string => Boolean(url)));
-  return mediaId;
+  const result = await api.publishIGContainer(form.selectedAccount, containerId, [uploaded.mediaUrl, uploaded.coverUrl].filter((url): url is string => Boolean(url)), {
+    mediaUrl: uploaded.mediaUrl,
+    caption: form.fields.caption,
+    mediaType: form.contentType,
+  });
+  return { mediaId: result.mediaId, mediaUrl: uploaded.mediaUrl, caption: form.fields.caption, facebookError: result.facebookError };
 }

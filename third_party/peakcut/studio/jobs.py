@@ -555,7 +555,7 @@ def _run_job(job):
             render_one(job, clip, words_now)
 
     cpus = os.cpu_count() or 4
-    renders = ThreadPoolExecutor(2 if cpus < 8 else min(6, cpus // 6))  # more clips made at once on a bigger machine
+    renders = ThreadPoolExecutor(min(3, max(1, cpus // 3)))
     futures = []
     step = BLOCK * 16000 if span > PROGRESSIVE_FROM else hi - lo
     blocks = [(x, min(hi, x + step)) for x in range(lo, hi, step)] or [(lo, hi)]

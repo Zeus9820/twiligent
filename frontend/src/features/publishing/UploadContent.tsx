@@ -42,6 +42,7 @@ export default function UploadContent() {
   importTarget.current = { form, showToast };
   const [clipImportError, setClipImportError] = useState('');
   const [importingClip, setImportingClip] = useState(false);
+  const [importProgress, setImportProgress] = useState('');
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const jobId = query.get('clipJob'), clipId = query.get('clip');
@@ -71,6 +72,48 @@ export default function UploadContent() {
   const bulk = useBulkSettings();
   const queue = useBulkQueue({ sharedCaption: bulk.settings.sharedCaption, onFirstFiles: bulk.applyFirstBatchDefaults });
   const bulkPublish = useBulkPublish({ queue, settings: bulk.settings, cloudConfig, showToast, onScheduled: loadScheduledPosts });
+  const bulkImport = useRef({ queue, bulk, showToast, accounts });
+  bulkImport.current = { queue, bulk, showToast, accounts };
+  const importedJob = useRef('');
+  const youtubeDefaulted = useRef(false);
+  useEffect(() => {
+    const jobId = new URLSearchParams(location.search).get('clipBatch');
+    if (!jobId || importedJob.current === jobId) return;
+    let active = true;
+    setUploadMode('bulk'); setImportingClip(true); setClipImportError(''); setImportProgress('Preparing clips…');
+    (async () => {
+      try {
+        const { job } = await api.getClippingJob(jobId);
+        if (!job.clips.length) throw new Error('No finished clips are available.');
+        let finished = 0;
+        setImportProgress(`Loading clips: 0 of ${job.clips.length}`);
+        const clips = await Promise.all(job.clips.map(async clip => {
+          const blob = await api.downloadClip(jobId, clip.id);
+          if (active) setImportProgress(`Loading clips: ${++finished} of ${job.clips.length}`);
+          const tags = (clip.hashtags || []).map(tag => `#${tag.replace(/^#+/, '')}`).join(' ');
+          const text = [clip.description, tags].filter(Boolean).join('\n\n');
+          return { file: new File([blob], `${clip.id}.mp4`, { type: 'video/mp4' }), title: clip.title, description: text, caption: text };
+        }));
+        if (!active) return;
+        importedJob.current = jobId;
+        bulkImport.current.queue.addClips(clips);
+        bulkImport.current.bulk.setSetting('contentType', 'REELS');
+        bulkImport.current.bulk.setSetting('scheduleMode', false);
+        bulkImport.current.bulk.setSetting('publishInstagram', true);
+        const youtube = bulkImport.current.accounts.find(account => account.platform === 'youtube');
+        if (youtube) { bulkImport.current.bulk.setSetting('youtubeAccount', youtube.id); youtubeDefaulted.current = true; }
+        bulkImport.current.showToast(`${clips.length} clips loaded. Review captions and select both accounts.`);
+      } catch (error) { if (active) setClipImportError((error as Error).message); }
+      finally { if (active) setImportingClip(false); }
+    })();
+    return () => { active = false; };
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!importedJob.current || youtubeDefaulted.current) return;
+    const youtube = accounts.find(account => account.platform === 'youtube');
+    if (youtube) { bulk.setSetting('youtubeAccount', youtube.id); youtubeDefaulted.current = true; }
+  }, [accounts, bulk.setSetting]);
 
   useEffect(() => {
     const instagramAccounts = (accounts || []).filter(account => account.platform === 'instagram' && !account.instagramProvider);
@@ -121,7 +164,7 @@ export default function UploadContent() {
         )}
       />
 
-      {importingClip && <p className="text-small text-ink-muted">Loading your rendered clip…</p>}
+      {importingClip && <p role="status" className="text-small text-ink-muted">{importProgress || 'Loading your rendered clip…'} Large clips may take a moment to download.</p>}
       {clipImportError && <p role="alert" className="text-small text-danger">{clipImportError}</p>}
       {!cloudConfig && form.publishInstagram && (
         <Alert variant="warning">

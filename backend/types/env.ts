@@ -11,6 +11,8 @@ export interface Env {
     INSTAGRAM_APP_ID?: string;
     INSTAGRAM_APP_SECRET?: string;
     INSTAGRAM_CONFIG_ID?: string;
+    FACEBOOK_LOGIN_CONFIG_ID?: string;
+    FACEBOOK_PAGE_TOKEN_KEY?: string;
     WINDSOR_API_KEY?: string;
     WINDSOR_OWNER_USER_ID?: string;
     MEDIA_BUCKET?: R2Bucket;

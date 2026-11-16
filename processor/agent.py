@@ -147,7 +147,14 @@ def process(config, root, job):
                     terminate_child()
                     raise InterruptedError('Job cancelled or processor stopped.')
                 snapshot = read_json(work / 'progress.json', {})
-                status.update(stage=str(snapshot.get('stage') or 'Processing on your Mac')[:180], progress=min(0.94, 0.05 + 0.89 * float(snapshot.get('progress') or 0)))
+                stage = str(snapshot.get('stage') or 'Processing on your Mac')
+                rendered = snapshot.get('clips') or []
+                if stage == 'Finishing the clips' and rendered:
+                    ready = sum(clip.get('status') == 'done' for clip in rendered)
+                    failed = sum(clip.get('status') == 'error' for clip in rendered)
+                    active = sum(clip.get('status') == 'rendering' for clip in rendered)
+                    stage = f'Rendering: {ready}/{len(rendered)} complete, {active} active' + (f', {failed} failed' if failed else '')
+                status.update(stage=stage[:180], progress=min(0.94, 0.05 + 0.89 * float(snapshot.get('progress') or 0)))
                 done.wait(2)
         snapshot = read_json(work / 'progress.json', {})
         if CHILD.returncode or snapshot.get('status') != 'done':
@@ -173,7 +180,7 @@ def process(config, root, job):
                     result = request(api, 'PUT', f'{base}/{upload}/{number}', credential, lease, content=chunk)
                     parts.append({'partNumber': number, 'etag': result['etag']})
             request(api, 'POST', f'{base}/{upload}/complete', credential, lease, json={'leaseId': lease, 'parts': parts})
-            clips.append({key: artifact[key] for key in ('id', 'title', 'description', 'start', 'end')})
+            clips.append({**{key: artifact[key] for key in ('id', 'title', 'description', 'start', 'end')}, 'hashtags': artifact.get('hashtags', [])})
         warning = (snapshot.get('ai') or {}).get('note') or ''
         if not (snapshot.get('ai') or {}).get('used'):
             warning = 'No AI-selected highlights were produced. The source may have too little speech, or the AI service was unavailable.'

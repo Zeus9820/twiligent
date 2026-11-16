@@ -50,7 +50,7 @@ def main():
     owner = auth.local_user()
     ctx.set_uid(owner.id)
     render.install_fonts()
-    render_slot = threading.BoundedSemaphore(1)
+    render_slot = threading.BoundedSemaphore(3)
     original_render = render.render_clip
     def one_render(*args, **kwargs):
         with render_slot:
@@ -64,7 +64,7 @@ def main():
         snapshot = jobs.public(job)
         snapshot['artifacts'] = [
             {'id': clip['id'], 'file': str(Path(job['dir']) / 'clips' / clip['file']),
-             'title': clip.get('title') or clip.get('hook') or 'Clip', 'description': clip.get('description', ''),
+             'title': clip.get('title') or clip.get('hook') or 'Clip', 'description': clip.get('description', ''), 'hashtags': clip.get('hashtags', []),
              'start': clip['start'], 'end': clip['end']}
             for clip in job.get('clips', []) if clip.get('status') == 'done' and clip.get('file')
         ]

@@ -20,6 +20,11 @@ export function useInstagramOAuthReturn({ showToast, loadAccounts, setDialogOpen
     } else if (result.errorMessage) {
       showToast(result.errorMessage, 'error');
     }
+    if (result.facebookConnected) {
+      showToast('Facebook Page connected. Instagram Reels will also publish to that Page.');
+      loadAccounts();
+    }
+    if (result.facebookErrorMessage) showToast(`Facebook Page connection failed: ${result.facebookErrorMessage}`, 'error');
     if (result.openAdd) setDialogOpen(true);
     setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams, showToast, loadAccounts, setDialogOpen]);

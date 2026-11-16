@@ -12,9 +12,11 @@ export interface AccountSectionProps {
   refreshingId: string | null;
   onRefresh: (id: string) => void;
   onDelete: (acct: AppAccount) => void;
+  onConnectFacebook: (acct: AppAccount) => void;
+  connectingFacebookId: string | null;
 }
 
-export default function AccountSection({ section, accounts, refreshingId, onRefresh, onDelete }: AccountSectionProps) {
+export default function AccountSection({ section, accounts, refreshingId, onRefresh, onDelete, onConnectFacebook, connectingFacebookId }: AccountSectionProps) {
   return (
     <section className="flex flex-col gap-3">
       <SectionHeader
@@ -35,6 +37,8 @@ export default function AccountSection({ section, accounts, refreshingId, onRefr
             refreshing={refreshingId === acct.id}
             onRefresh={() => onRefresh(acct.id)}
             onDelete={() => onDelete(acct)}
+            onConnectFacebook={section.key === 'instagram' ? () => onConnectFacebook(acct) : undefined}
+            connectingFacebook={connectingFacebookId === acct.id}
           />
         ))}
       </div>

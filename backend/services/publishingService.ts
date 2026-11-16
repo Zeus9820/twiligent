@@ -4,6 +4,8 @@ import {
 } from './instagram/instagramPublishing.ts';
 import { NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
 import { publishWindsorPost } from './instagram/windsorInstagram.ts';
+import { publishFacebookReel } from './facebook/facebookReels.ts';
+import { decryptFacebookPageToken } from '../lib/facebookPageToken.ts';
 import type { Redis } from '../types/app.ts';
 import type { ContainerStatus } from './instagram/instagramPublishing.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
@@ -25,7 +27,8 @@ export interface PublishingService {
     publishingLimit(userId: string, accountId: string): Promise<InstagramPublishingLimit[]>;
     createContainer(userId: string, accountId: string, post: InstagramPublishRequest): Promise<string>;
     containerStatus(userId: string, accountId: string, containerId: string): Promise<ContainerStatus>;
-    publishContainer(userId: string, accountId: string, containerId: string): Promise<string>;
+    publishContainer(userId: string, accountId: string, containerId: string, post?: { mediaUrl?: string; caption?: string; mediaType?: string }): Promise<{ mediaId: string; facebookMediaId?: string; facebookError?: string }>;
+    publishFacebookOnly(userId: string, accountId: string, mediaUrl: string, caption: string): Promise<string>;
 }
 
 export type PublishableAccount = Account & { igUserId: string; accessToken: string };
@@ -117,7 +120,7 @@ export function createPublishingService({ accounts, config, context, redis }: Pu
             return fetchContainerStatus(containerId, account.accessToken, signal);
         },
 
-        async publishContainer(userId, accountId, containerId) {
+        async publishContainer(userId, accountId, containerId, post) {
             const windsor = await windsorAccount(userId, accountId);
             if (windsor && config.windsor && windsor.igUserId) {
                 const redisClient = store();
@@ -131,12 +134,29 @@ export function createPublishingService({ accounts, config, context, redis }: Pu
                     const object = result as Record<string, unknown>;
                     const nested = object.data && typeof object.data === 'object' ? object.data as Record<string, unknown> : {};
                     const mediaId = object.media_id ?? object.id ?? nested.media_id ?? nested.id;
-                    if (typeof mediaId === 'string' && mediaId) return mediaId;
+                    if (typeof mediaId === 'string' && mediaId) return { mediaId };
                 }
                 throw new ValidationError('Windsor did not return a media ID. Check Instagram before trying again.');
             }
             const account = await findPublishable(userId, accountId);
-            return publishMediaContainer(account.igUserId, containerId, account.accessToken, signal);
+            const mediaId = await publishMediaContainer(account.igUserId, containerId, account.accessToken, signal);
+            if (post?.mediaType !== 'REELS' || !post.mediaUrl || !account.facebookPageId || !account.encryptedFacebookPageAccessToken || !config.facebook.tokenKey) return { mediaId };
+            try {
+                const pageToken = await decryptFacebookPageToken(account.encryptedFacebookPageAccessToken, config.facebook.tokenKey, userId, account.id);
+                const facebookMediaId = await publishFacebookReel(account.facebookPageId, pageToken, post.mediaUrl, post.caption || '', signal);
+                return { mediaId, facebookMediaId };
+            } catch (err) {
+                return { mediaId, facebookError: (err as Error).message };
+            }
+        },
+
+        async publishFacebookOnly(userId, accountId, mediaUrl, caption) {
+            const account = await accounts.findForUser(accountId, userId);
+            if (!account || account.platform !== 'instagram' || !account.facebookPageId || !account.encryptedFacebookPageAccessToken || !config.facebook.tokenKey) {
+                throw new ValidationError('Connect the Facebook Page to this Instagram account before retrying the share.');
+            }
+            const pageToken = await decryptFacebookPageToken(account.encryptedFacebookPageAccessToken, config.facebook.tokenKey, userId, account.id);
+            return publishFacebookReel(account.facebookPageId, pageToken, mediaUrl, caption, signal);
         },
     };
 }

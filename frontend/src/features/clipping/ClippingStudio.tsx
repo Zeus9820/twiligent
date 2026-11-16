@@ -14,6 +14,25 @@ import type { ClipJob, ClipOptions, ClippingDashboard } from '@shared/types/clip
 const DEFAULTS: ClipOptions = { maxClips: 3, minSeconds: 15, maxSeconds: 60, style: 'clean', layout: 'blur' };
 const field = 'h-10 w-full rounded-field border border-input bg-surface-raised px-3 text-sm text-ink';
 
+function duration(from: string, to: number): string {
+  const seconds = Math.max(0, Math.floor((to - new Date(from).getTime()) / 1000));
+  if (!Number.isFinite(seconds)) return 'Unavailable';
+  return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
+
+function guidance(job: ClipJob, online: boolean): string {
+  if (job.status === 'queued') return online ? 'The Mac will pick up queued work when available.' : 'Start the Mac processor and keep your Mac awake.';
+  if (job.status === 'failed') return 'Review the error above, then retry when the cause is resolved.';
+  if (job.status === 'completed') return 'Processing and upload have finished.';
+  if (!online) return 'The Mac appears offline. Keep it awake and check the processor connection.';
+  if (job.leaseExpires && job.leaseExpires < Date.now()) return 'The processor stopped reporting. Check your Mac, then restart the stalled job.';
+  if (/render|finish/i.test(job.stage)) return 'Rendering includes video effects, captions and audio. Progress may pause while each clip finishes.';
+  if (/upload/i.test(job.stage)) return 'The Mac is uploading finished clips. Keep it connected to the internet.';
+  if (/transcri|writing|reading/i.test(job.stage)) return 'The Mac is preparing speech and timestamps. Longer videos take more time.';
+  if (/finding|AI/i.test(job.stage)) return 'The AI is selecting moments from the transcript.';
+  return 'The Mac is processing this video. Keep it awake and connected.';
+}
+
 export default function ClippingStudio() {
   const { showToast } = useAppContext();
   const [params, setParams] = useSearchParams();
@@ -128,6 +147,18 @@ export default function ClippingStudio() {
         {!selected ? <EmptyState icon={<Scissors />} title="Ready when you are" description="Generated clips will appear here for review and publishing." /> : <>
           <div className="mb-4 flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2 text-small text-ink-muted">{selected.status === 'completed' ? <CheckCircle2 className="size-4 text-success" /> : selected.status === 'processing' ? <LoaderCircle className="size-4 animate-spin" /> : null}{selected.status}</span>{selected.status === 'queued' || selected.status === 'processing' ? <Button size="sm" variant="outline" disabled={pendingAction === selected.id} onClick={() => void jobAction(selected, 'cancel')}><X className="size-4" />Cancel</Button> : selected.status === 'failed' || selected.status === 'cancelled' ? <Button size="sm" variant="outline" disabled={pendingAction === selected.id} onClick={() => void jobAction(selected, 'retry')}>Retry</Button> : null}{selected.status === 'processing' && (selected.leaseExpires ?? Infinity) < Date.now() && <Button size="sm" variant="outline" onClick={() => void jobAction(selected, 'retry')}>Restart stalled job</Button>}</div>
           {selected.error && <p className="mb-3 text-small text-danger">{selected.error}</p>}{selected.warning && <p className="mb-3 text-small text-ink-muted">{selected.warning}</p>}
+          {selected.status === 'completed' && selected.clips.length > 0 && <div className="mb-4"><Link to={`/upload?clipBatch=${encodeURIComponent(selected.id)}`} className="inline-flex h-10 items-center rounded-control bg-brand px-4 text-small font-medium text-white">Publish all clips</Link><p className="mt-1 text-caption text-ink-faint">Review each clip and choose Instagram and YouTube before publishing.</p></div>}
+          <section aria-label="Processing details" className="mb-4 rounded-card border border-line bg-surface-sunken p-4">
+            <h3 className="text-small font-semibold">Processing details</h3>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-small">
+              <div><p className="text-ink-faint">Current step</p><p>{selected.stage}</p></div>
+              <div><p className="text-ink-faint">Overall progress</p><p>{Math.round(selected.progress * 100)}%</p></div>
+              <div><p className="text-ink-faint">Elapsed since queued</p><p>{duration(selected.createdAt, selected.status === 'processing' || selected.status === 'queued' ? Date.now() : new Date(selected.updatedAt).getTime())}</p></div>
+              <div><p className="text-ink-faint">Last processor update</p><p>{timeAgo(selected.updatedAt)}</p></div>
+            </div>
+            <p className="mt-3 text-caption text-ink-muted">{guidance(selected, online)}</p>
+            <p className="mt-1 text-caption text-ink-faint">Updates arrive about every 15 seconds. Clips appear after rendering and upload.</p>
+          </section>
           {selected.clips.length === 0 ? <p className="py-8 text-center text-small text-ink-muted">{selected.status === 'queued' ? 'Waiting for your Mac to pick up this video.' : selected.status === 'completed' ? 'No highlights were found. Try a video with more dialogue or reactions.' : 'Clips will appear after processing and upload finish.'}</p> : <div className="grid gap-4 md:grid-cols-2">{selected.clips.map(clip => <article key={clip.id} className="overflow-hidden rounded-card border border-line"><video src={clip.url} controls preload="none" className="aspect-[9/16] max-h-[28rem] w-full bg-black object-contain" /><div className="p-3"><h3 className="text-small font-semibold">{clip.title}</h3><p className="mt-1 text-caption text-ink-faint">{Math.round(clip.end - clip.start)} seconds · {Math.round(clip.start)}s–{Math.round(clip.end)}s</p><p className="mt-2 line-clamp-3 text-small text-ink-muted">{clip.description}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={pendingAction === clip.id} onClick={() => void download(selected, clip.id)}><Download className="size-3.5" />Download</Button><Link to={`/upload?clipJob=${selected.id}&clip=${clip.id}`} className="inline-flex h-8 items-center rounded-control bg-brand px-3 text-small font-medium text-white">Use in Publish</Link></div></div></article>)}</div>}
         </>}
       </SurfaceBox>

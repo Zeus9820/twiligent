@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import {
     getPublishingLimit, createContainer, getContainerStatus, publishContainer,
+    retryFacebookPagePublish,
 } from '../controllers/publishingController.ts';
 import { abortMediaUpload, completeMediaUpload, getMediaUploadConfig, startMediaUpload, uploadMediaPart } from '../controllers/mediaUploadController.ts';
 import type { AppEnv } from '../types/app.ts';
@@ -16,5 +17,6 @@ router.get('/accounts/:id/ig-publishing-limit', ...getPublishingLimit);
 router.post('/accounts/:id/ig-publish', ...createContainer);
 router.get('/ig-container/:containerId/status', ...getContainerStatus);
 router.post('/accounts/:id/ig-media-publish', ...publishContainer);
+router.post('/accounts/:id/facebook-page-publish', ...retryFacebookPagePublish);
 
 export default router;

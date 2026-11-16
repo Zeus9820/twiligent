@@ -23,6 +23,7 @@ import type {
     ResolveChannelResponse, YouTubeAnalyticsPayload, YouTubeComparisonResponse, YouTubeVideosResponse,
     YouTubeStudioSummary,
 } from '@shared/types/youtube.ts';
+import type { InboxFilter, InboxPage, InboxSyncResult, InstagramComment, InstagramCommentsPage } from '@shared/types/instagramComments.ts';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
@@ -184,25 +185,21 @@ function confirmedYouTubeBytes(range: string | null): number {
     return match ? Number(match[1]) + 1 : 0;
 }
 
-function youtubeXhr(uploadUrl: string, accessToken: string, chunk: Blob | null, range: string, onProgress: (loaded: number) => void): Promise<{ status: number; confirmedBytes: number; videoId?: string; message?: string }> {
+function youtubeXhr(sessionId: string, appToken: string, chunk: Blob | null, range: string, onProgress: (loaded: number) => void): Promise<{ status: number; confirmedBytes: number; videoId?: string }> {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', uploadUrl);
-        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+        xhr.open('PUT', `${API}/youtube-studio/short-uploads/${encodeURIComponent(sessionId)}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${appToken}`);
         xhr.setRequestHeader('Content-Range', range);
-        if (chunk) xhr.setRequestHeader('Content-Type', chunk.type || 'application/octet-stream');
+        xhr.setRequestHeader('Content-Type', 'application/octet-stream');
         xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress(event.loaded); };
-        xhr.onerror = () => reject(new Error('YouTube upload connection interrupted.'));
+        xhr.onerror = () => reject(new Error('The connection to Kratos Studio was interrupted. Retry to resume the upload.'));
         xhr.onload = () => {
-            const status = xhr.status;
-            if (status === 308) {
-                resolve({ status, confirmedBytes: confirmedYouTubeBytes(xhr.getResponseHeader('Range')) });
-                return;
-            }
-            let body: YouTubeUploadResponse = {};
-            try { body = JSON.parse(xhr.responseText) as YouTubeUploadResponse; } catch { /* report status */ }
-            if (status >= 200 && status < 300 && body.id) resolve({ status, confirmedBytes: -1, videoId: body.id });
-            else reject(new Error(body.error?.message || `YouTube upload failed (HTTP ${status}).`));
+            let body: { status?: number; range?: string; videoId?: string; error?: string } = {};
+            try { body = JSON.parse(xhr.responseText); } catch { /* report HTTP status */ }
+            if (xhr.status >= 200 && xhr.status < 300 && body.status === 308) resolve({ status: 308, confirmedBytes: confirmedYouTubeBytes(body.range || null) });
+            else if (xhr.status >= 200 && xhr.status < 300 && body.videoId) resolve({ status: xhr.status, confirmedBytes: -1, videoId: body.videoId });
+            else reject(new Error(body.error || `YouTube upload failed (HTTP ${xhr.status}).`));
         };
         xhr.send(chunk);
     });
@@ -212,37 +209,33 @@ async function uploadYouTubeShort(accountId: string, file: File, { title, descri
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Sign in again before uploading to YouTube.');
     const stateKey = `youtube-short-upload:${session.user.id}:${accountId}:${resumeKey || 'file'}:${file.name}:${file.size}:${file.lastModified}:${title}:${description}:${privacyStatus}`;
-    let uploadUrl: string | null = null;
-    let accessToken: string | null = null;
-    try {
-        const saved = JSON.parse(sessionStorage.getItem(stateKey) || 'null') as { uploadUrl?: string; accessToken?: string } | null;
-        uploadUrl = saved?.uploadUrl || null;
-        accessToken = saved?.accessToken || null;
-    } catch { sessionStorage.removeItem(stateKey); }
-    if (!uploadUrl) {
-        const started = await request<{ success: true; uploadUrl: string; accessToken: string }>(`/accounts/${encodeURIComponent(accountId)}/youtube-studio/short-uploads`, {
+    let sessionId = sessionStorage.getItem(stateKey + ':proxy');
+    if (!sessionId && sessionStorage.getItem(stateKey)) throw new Error('This video has an earlier upload attempt. Check YouTube Studio before starting a new upload to avoid a duplicate.');
+    const resumeExisting = Boolean(sessionId);
+    if (!sessionId) {
+        const started = await request<{ success: true; sessionId: string }>(`/accounts/${encodeURIComponent(accountId)}/youtube-studio/short-uploads`, {
             method: 'POST', body: JSON.stringify({ title, description, contentType: file.type, size: file.size, privacyStatus }),
         });
-        uploadUrl = started.uploadUrl;
-        accessToken = started.accessToken;
-        sessionStorage.setItem(stateKey, JSON.stringify({ uploadUrl, accessToken }));
+        sessionId = started.sessionId;
+        sessionStorage.setItem(stateKey + ':proxy', sessionId);
     }
 
     let offset = 0;
     let result: string | undefined;
     for (let attempt = 0; attempt < 5 && !result; attempt++) {
         try {
-            if (attempt > 0) {
-                const status = await youtubeXhr(uploadUrl, accessToken as string, null, `bytes */${file.size}`, () => undefined);
+            if (attempt > 0 || resumeExisting) {
+                const status = await youtubeXhr(sessionId, session.access_token, null, `bytes */${file.size}`, () => undefined);
                 if (status.videoId) { result = status.videoId; break; }
                 offset = status.confirmedBytes;
             }
             while (offset < file.size) {
                 const end = Math.min(offset + YOUTUBE_CHUNK_SIZE, file.size);
                 const chunk = file.slice(offset, end, file.type);
-                const response = await youtubeXhr(uploadUrl, accessToken as string, chunk, `bytes ${offset}-${end - 1}/${file.size}`, loaded => onProgress?.(Math.round((offset + loaded) / file.size * 100)));
+                const response = await youtubeXhr(sessionId, session.access_token, chunk, `bytes ${offset}-${end - 1}/${file.size}`, loaded => onProgress?.(Math.round((offset + loaded) / file.size * 100)));
                 if (response.videoId) { result = response.videoId; break; }
-                offset = response.confirmedBytes || end;
+                if (response.confirmedBytes <= offset || response.confirmedBytes > end) throw new Error('YouTube did not confirm the uploaded chunk. Checking the upload status.');
+                offset = response.confirmedBytes;
                 onProgress?.(Math.round(offset / file.size * 100));
             }
         } catch (error) {
@@ -251,7 +244,7 @@ async function uploadYouTubeShort(accountId: string, file: File, { title, descri
         }
     }
     if (!result) throw new Error('YouTube did not confirm the Short upload. Retry to resume it.');
-    sessionStorage.removeItem(stateKey);
+    sessionStorage.removeItem(stateKey + ':proxy');
     onProgress?.(100);
     return result;
 }
@@ -300,11 +293,19 @@ export const api = {
 
     // Instagram OAuth - gets the auth URL to redirect the browser to
     getInstagramAuthUrl: () => request<InstagramAuthUrlResponse>('/auth/instagram/url'),
+    getFacebookPageAuthUrl: (id: string) => request<{ url: string }>(`/accounts/${id}/facebook-page/url`),
+    retryFacebookPagePublish: (id: string, mediaUrl: string, caption: string) => request<{ success: true; videoId: string }>(`/accounts/${id}/facebook-page-publish`, { method: 'POST', body: JSON.stringify({ mediaUrl, caption }) }),
 
     addInstagramAccount: (accessToken: string) => request<AccountResponse>('/accounts/instagram', { method: 'POST', body: JSON.stringify({ accessToken }) }),
     refreshIGToken: (id: string) => request<InstagramTokenRefreshResponse>(`/accounts/${id}/refresh-ig-token`, { method: 'POST' }),
     getIGAnalytics: (id: string) => request<InstagramAnalyticsResponse>(`/accounts/${id}/ig-analytics`),
     getIGMedia: (id: string) => request<InstagramMediaResponse>(`/accounts/${id}/ig-media`),
+    getIGInbox: (id: string, filter: InboxFilter, cursor?: string) => request<{ success: true } & InboxPage>(`/accounts/${id}/ig-inbox?filter=${filter}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+    syncIGInbox: (id: string, mode: 'latest' | 'history' = 'latest') => request<{ success: true } & InboxSyncResult>(`/accounts/${id}/ig-inbox/sync?mode=${mode}`, { method: 'POST' }),
+    markIGCommentRead: (id: string, commentId: string) => request<{ success: true }>(`/accounts/${id}/ig-inbox/${commentId}/read`, { method: 'POST' }),
+    getIGComments: (id: string, mediaId: string, after?: string) => request<{ success: true } & InstagramCommentsPage>(`/accounts/${id}/ig-comments?mediaId=${encodeURIComponent(mediaId)}${after ? `&after=${encodeURIComponent(after)}` : ''}`),
+    suggestIGCommentReply: (id: string, mediaId: string, commentId: string) => request<{ success: true; suggestion: string }>(`/accounts/${id}/ig-comments/suggest-reply`, { method: 'POST', body: JSON.stringify({ mediaId, commentId }) }),
+    replyToIGComment: (id: string, mediaId: string, commentId: string, text: string) => request<{ success: true; comment: InstagramComment }>(`/accounts/${id}/ig-comments/reply`, { method: 'POST', body: JSON.stringify({ mediaId, commentId, text }) }),
 
     // Channel URL/ID resolution
     resolveChannel: (input: string) => request<ResolveChannelResponse>('/resolve-channel', { method: 'POST', body: JSON.stringify({ input }) }),
@@ -326,7 +327,7 @@ export const api = {
     getIGPublishingLimit: (id: string) => request<InstagramPublishingLimitResponse>(`/accounts/${id}/ig-publishing-limit`),
     createIGContainer: (id: string, data: InstagramPublishRequest) => request<InstagramPublishResponse>(`/accounts/${id}/ig-publish`, { method: 'POST', body: JSON.stringify(data) }),
     getIGContainerStatus: (containerId: string, accountId: string) => request<InstagramContainerStatusResponse>(`/ig-container/${containerId}/status?accountId=${accountId}`),
-    publishIGContainer: (id: string, containerId: string, mediaUrls: string[] = []) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId, mediaUrls }) }),
+    publishIGContainer: (id: string, containerId: string, mediaUrls: string[] = [], facebookPost?: { mediaUrl: string; caption: string; mediaType: string }) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId, mediaUrls, ...facebookPost }) }),
 
     addRedditAccount: (username: string, cookie: string) => request<AccountResponse>('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
     getRedditAnalytics: (id: string) => request<RedditCacheData>(`/accounts/${id}/reddit-analytics`),

@@ -28,6 +28,11 @@ export function useBulkQueue({ sharedCaption, onFirstFiles }: BulkQueueOptions) 
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const addClips = (clips: Array<{ file: File; title: string; description: string; caption: string }>) => {
+    const items = clips.map(clip => ({ ...newQueueItem(clip.file, ++idCounter.current), youtubeTitle: clip.title.slice(0, 100), youtubeDescription: clip.description, caption: clip.caption }));
+    setFiles(prev => [...prev, ...items]);
+  };
+
   const removeFile = (id: number) => setFiles(prev => removeQueueItem(prev, id));
 
   const patchFile = (id: number, patch: QueueItemPatch) => setFiles(prev => patchQueueItem(prev, id, patch));
@@ -46,7 +51,7 @@ export function useBulkQueue({ sharedCaption, onFirstFiles }: BulkQueueOptions) 
 
   return {
     files, processing, setProcessing, fileInputRef, cancelRef,
-    handleFilesSelect, removeFile, patchFile, applySharedCaption, clearFiles,
+    handleFilesSelect, addClips, removeFile, patchFile, applySharedCaption, clearFiles,
   };
 }
 

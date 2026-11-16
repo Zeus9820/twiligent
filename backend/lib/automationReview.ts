@@ -15,6 +15,7 @@ export interface ConversationMessage {
     id: string;
     createdTime: string;
     fromId: string | null;
+    fromUsername?: string | null;
     text: string | null;
 }
 

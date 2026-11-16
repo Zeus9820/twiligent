@@ -10,7 +10,7 @@ interface ReplyBody extends InstagramApiErrorBody {
 }
 
 interface RepliesBody {
-    data?: { id?: string; text?: string; timestamp?: string; from?: { id?: string } }[];
+    data?: { id?: string; text?: string; timestamp?: string; from?: { id?: string; username?: string }; username?: string }[];
     paging?: { next?: string; cursors?: { after?: string } };
 }
 
@@ -40,7 +40,7 @@ export async function listCommentReplies(commentId: string, accessToken: string,
         if (after) params.after = after;
         const body = await igFetch<RepliesBody>(`/${commentId}/replies`, params, 0, signal);
         for (const reply of body.data ?? []) {
-            if (reply.id && reply.timestamp) replies.push({ id: reply.id, createdTime: reply.timestamp, fromId: reply.from?.id ?? null, text: reply.text ?? null });
+            if (reply.id && reply.timestamp) replies.push({ id: reply.id, createdTime: reply.timestamp, fromId: reply.from?.id ?? null, ...(reply.from?.username ? { fromUsername: reply.from.username } : {}), text: reply.text ?? null });
         }
         after = body.paging?.next ? body.paging.cursors?.after : undefined;
         if (!after) return { replies, complete: true };

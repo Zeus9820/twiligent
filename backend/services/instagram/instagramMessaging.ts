@@ -42,8 +42,10 @@ interface ConversationBody {
 // deadline never makes one ambiguous. read turns a successful answer into the result
 export async function postOnce<T extends InstagramApiErrorBody>(endpoint: string, accessToken: string, payload: unknown, read: (body: T) => SendResult): Promise<SendResult> {
     let response: Response;
+    const url = buildGraphUrl(endpoint, { access_token: accessToken });
+    url.searchParams.delete('access_token');
     try {
-        response = await fetch(buildGraphUrl(endpoint).toString(), {
+        response = await fetch(url.toString(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
             body: JSON.stringify(payload),

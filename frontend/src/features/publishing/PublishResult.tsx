@@ -12,9 +12,11 @@ export interface PublishResultProps {
   scheduleMode: boolean;
   onReset: () => void;
   youtubeVideoId?: string | null;
+  facebookShareError?: string | null;
+  onRetryFacebookShare?: () => void;
 }
 
-export default function PublishResult({ progress, selectedType, selectedAcct, scheduleMode, onReset, youtubeVideoId }: PublishResultProps) {
+export default function PublishResult({ progress, selectedType, selectedAcct, scheduleMode, onReset, youtubeVideoId, facebookShareError, onRetryFacebookShare }: PublishResultProps) {
   const { publishStatus, statusMessage, publishedMediaId } = progress;
 
   if (publishStatus === 'done') {
@@ -23,6 +25,7 @@ export default function PublishResult({ progress, selectedType, selectedAcct, sc
         <span className="flex size-12 items-center justify-center rounded-full bg-success-soft text-success"><CheckCircle2 className="size-6" /></span>
         <h2 className="font-heading text-page-title font-semibold text-ink">Published</h2>
         <p className="text-sm text-ink-muted">{selectedAcct && youtubeVideoId ? 'Published to Instagram Reels and YouTube Shorts.' : youtubeVideoId ? 'Uploaded to YouTube Shorts.' : 'Published to Instagram Reels.'}</p>
+        {facebookShareError && <div className="max-w-lg rounded-md border border-warning/40 bg-warning-soft p-3 text-left text-sm text-warning"><p>Instagram published successfully, but Facebook failed: {facebookShareError}</p>{onRetryFacebookShare && <Button className="mt-2" variant="outline" size="sm" onClick={onRetryFacebookShare}>Retry Facebook share</Button>}</div>}
         {publishedMediaId && <Badge variant="outline" className="font-mono">Instagram media ID {publishedMediaId}</Badge>}
         <div className="mt-2 flex gap-2">
           <Button onClick={onReset}><Plus data-icon="inline-start" />Publish another</Button>
